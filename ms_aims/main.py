@@ -168,17 +168,32 @@ def index():
                 update_input_ui()  # Refresh UI
                 ui.notify(f"Switched to {input_source_type}")
 
-            def on_file_select(e):
+            def on_file_upload(e):
                 global input_source_path, source_changed
-                if e.files:
-                    # Get the full path of the selected file
-                    selected_file = e.files[0]
-                    input_source_path = selected_file.name or str(selected_file)
+                # Check file extension
+                valid_extensions = ['.mp4', '.avi', '.mkv', '.mov']
+                file_ext = os.path.splitext(e.name)[1].lower()
+                
+                if file_ext not in valid_extensions:
+                    ui.notify("Please select a valid video file (.mp4, .avi, .mkv, .mov)", type='negative')
+                    return
+                
+                # Save uploaded file to temporary location
+                if e.content:
+                    temp_dir = os.path.join(os.getcwd(), "ms_aims", "data", "temp")
+                    os.makedirs(temp_dir, exist_ok=True)
+                    
+                    # Generate a temporary file path
+                    temp_file = os.path.join(temp_dir, e.name)
+                    with open(temp_file, 'wb') as f:
+                        f.write(e.content.read())
+                    
+                    input_source_path = temp_file
                     source_changed = True
                     update_input_ui()  # Refresh UI to show selected file
-                    ui.notify(f"Video selected: {os.path.basename(input_source_path)}")
+                    ui.notify(f"Video uploaded: {e.name}", type='positive')
                 else:
-                    ui.notify("No file selected", type='warning')
+                    ui.notify("Upload failed", type='warning')
             
             def update_input_ui():
                 input_container.clear()
@@ -188,11 +203,13 @@ def index():
                         ui.label('Camera stream will be displayed below').classes('text-sm text-gray-600 w-full')
                     else:
                         # For VIDEO mode, show file browser
-                        file_input = ui.file_input(accept='.mp4,.avi,.mkv,.mov', label='Select Video File', 
-                                                  on_change=on_file_select).classes('w-full').props('outlined dense')
+                        with ui.row().classes('w-full'):
+                            ui.upload(label='Select Video File', multiple=False, 
+                                    on_upload=on_file_upload, 
+                                    accept='.mp4,.avi,.mkv,.mov').classes('w-full')
                         
                         # Show current video file if any
-                        if input_source_path and input_source_path.startswith('/'):
+                        if input_source_path:
                             file_display = os.path.basename(input_source_path)
                             ui.label(f'Selected: {file_display}').classes('text-sm text-blue-600 mt-1')
             
