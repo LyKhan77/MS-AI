@@ -1,6 +1,6 @@
 # Core
 nicegui>=1.4.0
-numpy>=1.21.0  # Compatible with both 1.x and 2.x
+numpy<2.0.0  # Downgraded for compatibility with system matplotlib (JetPack 6)
 ultralytics>=8.1.0  # YOLOv8/NanoSAM support
 
 # IO

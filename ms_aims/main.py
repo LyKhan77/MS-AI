@@ -137,4 +137,4 @@ app.on_shutdown(shutdown)
 if __name__ in {"__main__", "__mp_main__"}:
     # native=False agar tidak error di Jetson (Headless)
     # port 8080 agar mudah diakses
-    ui.run(title='MS-AIMS', port=8080, reload=False, native=False)
+    ui.run(title='MS-AIMS', port=8080, reload=False, native=False, storage_secret='ms-aims-secret-key')
