@@ -149,10 +149,47 @@ def index():
             with ui.row().classes('w-full items-center gap-4 mb-2'):
                 ui.label('Input Source:').classes('font-bold')
             
+            # Video Container (id="c16")
+            video_image = ui.interactive_image().classes('w-full rounded bg-black').props('id="c16"')
+            
+            # Create a placeholder for video mode
+            video_placeholder = ui.row().classes('w-full h-64 bg-gray-200 rounded items-center justify-center hidden')
+            with video_placeholder:
+                ui.icon('movie', size='3xl').classes('text-gray-400')
+                ui.label('No video selected').classes('text-gray-500 mt-2')
+            
             # Dynamic container based on selected input source
             input_container = ui.row().classes('w-full mt-2')
             
-            # Define functions before they are used
+            # Define functions after UI elements are created
+            def update_input_ui():
+                input_container.clear()
+                with input_container:
+                    if input_source_type == 'STREAM':
+                        # For STREAM mode, no input needed - just show a label
+                        ui.label('Camera stream will be displayed below').classes('text-sm text-gray-600 w-full')
+                        # Hide placeholder and show video image
+                        video_placeholder.classes('hidden')
+                        video_image.classes('w-full rounded bg-black')
+                    else:
+                        # For VIDEO mode, show file browser
+                        with ui.row().classes('w-full'):
+                            ui.upload(label='Select Video File', multiple=False, 
+                                    on_upload=on_file_upload, 
+                                    accept='.mp4,.avi,.mkv,.mov').classes('w-full')
+                        
+                        # Show current video file if any
+                        if input_source_path:
+                            file_display = os.path.basename(input_source_path)
+                            ui.label(f'Selected: {file_display}').classes('text-sm text-blue-600 mt-1')
+                            # Hide placeholder and show video image
+                            video_placeholder.classes('hidden')
+                            video_image.classes('w-full rounded bg-black')
+                        else:
+                            # Show placeholder when no video is selected
+                            video_placeholder.classes('w-full h-64 bg-gray-200 rounded items-center justify-center flex flex-col')
+                            video_image.classes('hidden')
+            
             def on_source_change(e):
                 global input_source_type, input_source_path, source_changed, latest_frame
                 input_source_type = e.value
@@ -197,49 +234,12 @@ def index():
                 else:
                     ui.notify("Upload failed", type='warning')
             
-            def update_input_ui():
-                input_container.clear()
-                with input_container:
-                    if input_source_type == 'STREAM':
-                        # For STREAM mode, no input needed - just show a label
-                        ui.label('Camera stream will be displayed below').classes('text-sm text-gray-600 w-full')
-                        # Hide placeholder and show video image
-                        video_placeholder.classes('hidden')
-                        video_image.classes('w-full rounded bg-black')
-                    else:
-                        # For VIDEO mode, show file browser
-                        with ui.row().classes('w-full'):
-                            ui.upload(label='Select Video File', multiple=False, 
-                                    on_upload=on_file_upload, 
-                                    accept='.mp4,.avi,.mkv,.mov').classes('w-full')
-                        
-                        # Show current video file if any
-                        if input_source_path:
-                            file_display = os.path.basename(input_source_path)
-                            ui.label(f'Selected: {file_display}').classes('text-sm text-blue-600 mt-1')
-                            # Hide placeholder and show video image
-                            video_placeholder.classes('hidden')
-                            video_image.classes('w-full rounded bg-black')
-                        else:
-                            # Show placeholder when no video is selected
-                            video_placeholder.classes('w-full h-64 bg-gray-200 rounded items-center justify-center flex flex-col')
-                            video_image.classes('hidden')
-            
             # Radio Button for Stream/Video selection
             with ui.row().classes('w-full'):
                 ui.radio(['STREAM', 'VIDEO'], value=input_source_type, on_change=on_source_change).props('inline')
             
             # Initial Render
             update_input_ui()
-            
-            # Video Container (id="c16")
-            video_image = ui.interactive_image().classes('w-full rounded bg-black').props('id="c16"')
-            
-            # Create a placeholder for video mode
-            video_placeholder = ui.row().classes('w-full h-64 bg-gray-200 rounded items-center justify-center hidden')
-            with video_placeholder:
-                ui.icon('movie', size='3xl').classes('text-gray-400')
-                ui.label('No video selected').classes('text-gray-500 mt-2')
         
         # RIGHT: Control Panel
         with ui.card().classes('w-1/3 h-full'):
