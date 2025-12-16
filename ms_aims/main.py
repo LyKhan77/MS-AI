@@ -13,7 +13,6 @@ from src.ai_engine import AIEngine
 from src.dimension import DimensionCalculator
 
 # --- KONFIGURASI ---
-DEFAULT_RTSP = "rtsp://admin:gspe-intercon@192.168.0.64:554/Streaming/Channels/1"
 VIDEO_DIR = "ms_aims/data/videos"
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
@@ -24,10 +23,9 @@ latest_frame = None
 is_running = True
 current_dimensions = {'w': 0, 'h': 0}
 
-# Input Source State
-input_source_type = 'STREAM' # 'STREAM' or 'VIDEO'
-input_source_path = DEFAULT_RTSP
-source_changed = False # Flag to trigger reconnection
+# Input Source State - Only video files from directory
+input_source_path = ""  # Will be set when user selects a video
+source_changed = False  # Flag to trigger reconnection
 
 # Initialize Modules
 ai_engine = AIEngine()
@@ -57,7 +55,7 @@ def camera_loop():
     cap = None
     current_source = input_source_path
     
-    print(f"Starting Camera Loop with: {current_source}")
+    print("Starting Video Player Loop")
 
     while is_running:
         # Reconnect logic if source changed or cap is None
@@ -67,33 +65,28 @@ def camera_loop():
             
             current_source = input_source_path
             
-            # Validation: If video mode but no file, don't try to open
-            if input_source_type == 'VIDEO' and (not current_source or not os.path.exists(current_source)):
+            # Validation: If no video file selected, don't try to open
+            if not current_source or not os.path.exists(current_source):
                 print("No valid video file selected. Waiting...")
                 time.sleep(1)
                 source_changed = False # Reset to avoid loop
                 continue
 
-            print(f"Opening Source: {current_source}")
+            print(f"Opening Video File: {current_source}")
             cap = cv2.VideoCapture(current_source)
             source_changed = False
             
             if not cap.isOpened():
-                print("Failed to open source. Retrying in 2s...")
+                print("Failed to open video file. Retrying in 2s...")
                 time.sleep(2)
                 continue
 
         ret, frame = cap.read()
         
         # Handle Video Loop (End of file)
-        if not ret and input_source_type == 'VIDEO' and cap.isOpened():
+        if not ret and cap.isOpened():
              print("Video ended, looping...")
              cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-             continue
-        elif not ret and input_source_type == 'STREAM':
-             print("Stream lost, reconnecting...")
-             cap.release()
-             cap = None
              continue
         
         if ret:
@@ -120,15 +113,12 @@ def camera_loop():
             b64_image = base64.b64encode(buffer).decode('utf-8')
             latest_frame = f'data:image/jpeg;base64,{b64_image}'
             
-            # FPS Control
-            if input_source_type == 'VIDEO':
-                time.sleep(0.033)
-            else:
-                time.sleep(0.01)
+            # FPS Control for video playback
+            time.sleep(0.033)
 
     if cap:
         cap.release()
-    print("Camera released.")
+    print("Video player released.")
 
 # --- 2. UI LOGIC (NiceGUI) ---
 @ui.page('/')
@@ -147,7 +137,30 @@ def index():
             
             # --- INPUT SOURCE CONTROL ---
             with ui.row().classes('w-full items-center gap-4 mb-2'):
-                ui.label('Input Source:').classes('font-bold')
+                ui.label('Video Source:').classes('font-bold')
+            
+            # Get available video files
+            available_videos = get_video_files()
+            
+            # Video selection dropdown
+            with ui.row().classes('w-full mb-2'):
+                if available_videos:
+                    # Create a display-friendly version for the dropdown
+                    display_videos = [os.path.basename(video) for video in available_videos]
+                    
+                    ui.select(
+                        options=display_videos, 
+                        label='Select Video File', 
+                        value=display_videos[0] if display_videos else None,
+                        on_change=lambda e: select_video(e.value)
+                    ).classes('w-full').props('outlined dense')
+                    
+                    # Auto-select the first video if available
+                    if available_videos:
+                        input_source_path = available_videos[0]
+                        source_changed = True
+                else:
+                    ui.label('No video files found in ms_aims/data/videos').classes('text-red-500 w-full')
             
             # Video Container (id="c16")
             video_image = ui.interactive_image().classes('w-full rounded bg-black').props('id="c16"')
@@ -158,88 +171,33 @@ def index():
                 ui.icon('movie', size='3xl').classes('text-gray-400')
                 ui.label('No video selected').classes('text-gray-500 mt-2')
             
-            # Dynamic container based on selected input source
-            input_container = ui.row().classes('w-full mt-2')
-            
-            # Define functions after UI elements are created
-            def update_input_ui():
-                input_container.clear()
-                with input_container:
-                    if input_source_type == 'STREAM':
-                        # For STREAM mode, no input needed - just show a label
-                        ui.label('Camera stream will be displayed below').classes('text-sm text-gray-600 w-full')
-                        # Hide placeholder and show video image
-                        video_placeholder.classes('hidden')
-                        video_image.classes('w-full rounded bg-black')
-                    else:
-                        # For VIDEO mode, show file browser
-                        with ui.row().classes('w-full'):
-                            ui.upload(label='Select Video File', multiple=False, 
-                                    on_upload=on_file_upload, 
-                                    accept='.mp4,.avi,.mkv,.mov').classes('w-full')
-                        
-                        # Show current video file if any
-                        if input_source_path:
-                            file_display = os.path.basename(input_source_path)
-                            ui.label(f'Selected: {file_display}').classes('text-sm text-blue-600 mt-1')
-                            # Hide placeholder and show video image
-                            video_placeholder.classes('hidden')
-                            video_image.classes('w-full rounded bg-black')
-                        else:
-                            # Show placeholder when no video is selected
-                            video_placeholder.classes('w-full h-64 bg-gray-200 rounded items-center justify-center flex flex-col')
-                            video_image.classes('hidden')
-            
-            def on_source_change(e):
-                global input_source_type, input_source_path, source_changed, latest_frame
-                input_source_type = e.value
+            # Function to handle video selection
+            def select_video(selected_file_display):
+                global input_source_path, source_changed, latest_frame
                 
-                # Set default path when switching
-                if input_source_type == 'STREAM':
-                    input_source_path = DEFAULT_RTSP
+                # Find the full path from display name
+                for video_path in available_videos:
+                    if os.path.basename(video_path) == selected_file_display:
+                        input_source_path = video_path
+                        source_changed = True
+                        # Clear the latest frame when switching video
+                        latest_frame = None
+                        ui.notify(f"Video selected: {selected_file_display}", type='positive')
+                        break
+            
+            # Update UI based on video selection
+            def update_video_ui():
+                if input_source_path and os.path.exists(input_source_path):
+                    # Hide placeholder and show video image
+                    video_placeholder.classes('hidden')
+                    video_image.classes('w-full rounded bg-black')
                 else:
-                    # For video mode, clear path until file is selected
-                    input_source_path = ""
-                    # Clear the latest frame when switching to video mode
-                    latest_frame = None
-                
-                source_changed = True
-                update_input_ui()  # Refresh UI
-                ui.notify(f"Switched to {input_source_type}")
-
-            def on_file_upload(e):
-                global input_source_path, source_changed
-                # Check file extension
-                valid_extensions = ['.mp4', '.avi', '.mkv', '.mov']
-                file_ext = os.path.splitext(e.name)[1].lower()
-                
-                if file_ext not in valid_extensions:
-                    ui.notify("Please select a valid video file (.mp4, .avi, .mkv, .mov)", type='negative')
-                    return
-                
-                # Save uploaded file to temporary location
-                if e.content:
-                    temp_dir = os.path.join(os.getcwd(), "ms_aims", "data", "temp")
-                    os.makedirs(temp_dir, exist_ok=True)
-                    
-                    # Generate a temporary file path
-                    temp_file = os.path.join(temp_dir, e.name)
-                    with open(temp_file, 'wb') as f:
-                        f.write(e.content.read())
-                    
-                    input_source_path = temp_file
-                    source_changed = True
-                    update_input_ui()  # Refresh UI to show selected file
-                    ui.notify(f"Video uploaded: {e.name}", type='positive')
-                else:
-                    ui.notify("Upload failed", type='warning')
+                    # Show placeholder when no video is selected
+                    video_placeholder.classes('w-full h-64 bg-gray-200 rounded items-center justify-center flex flex-col')
+                    video_image.classes('hidden')
             
-            # Radio Button for Stream/Video selection
-            with ui.row().classes('w-full'):
-                ui.radio(['STREAM', 'VIDEO'], value=input_source_type, on_change=on_source_change).props('inline')
-            
-            # Initial Render
-            update_input_ui()
+            # Initial UI update
+            update_video_ui()
         
         # RIGHT: Control Panel
         with ui.card().classes('w-1/3 h-full'):
@@ -278,9 +236,8 @@ def index():
     # --- 3. UI UPDATE LOOP ---
     async def update_state():
         if latest_frame:
-            # Only update video image if it's visible (not hidden)
-            if 'hidden' not in video_image.classes:
-                video_image.set_source(latest_frame)
+            # Update video image with the latest frame
+            video_image.set_source(latest_frame)
         
         dim_l.set_text(f"{current_dimensions['w']:.1f} mm")
         dim_w.set_text(f"{current_dimensions['h']:.1f} mm")
