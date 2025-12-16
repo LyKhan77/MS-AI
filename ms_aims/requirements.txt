@@ -1,0 +1,15 @@
+# Core
+nicegui>=1.4.0
+numpy>=1.21.0
+ultralytics>=8.1.0  # YOLOv8/NanoSAM support
+
+# IO
+pyserial
+
+# Optimization (Optional, uncomment if needed explicitly, usually part of system)
+# tensorrt
+
+# Excluded (Handled by setup_jetson.sh or System):
+# - torch (Jetson wheel)
+# - torchvision (Jetson wheel)
+# - opencv-python (Use system python3-opencv built with CUDA)

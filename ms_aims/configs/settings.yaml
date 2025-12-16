@@ -1,0 +1,13 @@
+camera:
+  id: 0
+  width: 1280
+  height: 720
+  fps: 30
+
+processing:
+  defect_threshold: 0.5
+  dimension_calibration_factor: 1.0  # pixels per mm (placeholder)
+
+ui:
+  port: 8080
+  title: "MS-AIMS"
