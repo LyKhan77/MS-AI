@@ -13,7 +13,8 @@ FRAME_HEIGHT = 720
 
 # --- STATUS GLOBAL (Shared State) ---
 # Di production nanti gunakan Manager/Queue dari multiprocessing
-app.storage.user['status'] = 'IDLE'
+# app.storage.user['status'] = 'IDLE' # REMOVED: Caused context error
+SYSTEM_STATUS = 'IDLE' # Global system state
 latest_frame = None
 is_running = True
 
@@ -83,6 +84,8 @@ def index():
             
             # Tombol Manual Trigger (Untuk Testing)
             def manual_trigger():
+                global SYSTEM_STATUS
+                SYSTEM_STATUS = 'PROCESSING'
                 log_area.push(f'{time.strftime("%H:%M:%S")} - Manual Trigger Activated')
                 ui.notify('Processing...', type='info')
                 # Simulasi hasil
@@ -93,22 +96,28 @@ def index():
                 ui.timer(1.0, lambda: finish_process(), once=True)
 
             def finish_process():
+                global SYSTEM_STATUS
                 # Random Result simulation
                 import random
                 is_defect = random.choice([True, False])
                 
                 if is_defect:
+                    SYSTEM_STATUS = 'NG'
                     status_label.set_text('NG - DEFECT DETECTED')
                     status_label.classes(replace='bg-red-600')
                     ui.notify('REJECTED!', type='negative')
                     log_area.push('Result: NG (Scratched)')
                 else:
+                    SYSTEM_STATUS = 'OK'
                     status_label.set_text('OK - PASS')
                     status_label.classes(replace='bg-green-600')
                     ui.notify('PASSED', type='positive')
                     log_area.push('Result: OK')
                     dim_l.set_text(f'{random.randint(290,310)} mm')
                     dim_w.set_text(f'{random.randint(190,210)} mm')
+                
+                # Reset to idle after a while?
+                # SYSTEM_STATUS = 'IDLE'
 
             ui.button('TRIGGER CHECK', on_click=manual_trigger).classes('w-full bg-blue-700 text-white')
 
