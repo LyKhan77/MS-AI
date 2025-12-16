@@ -1,6 +1,6 @@
 # Core
 nicegui>=1.4.0
-numpy>=1.21.0
+numpy>=1.21.0  # Compatible with both 1.x and 2.x
 ultralytics>=8.1.0  # YOLOv8/NanoSAM support
 
 # IO
