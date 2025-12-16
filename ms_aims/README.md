@@ -14,12 +14,28 @@ This system automates dimension measurement and defect detection for manual meta
 ## Installation
 
 ### 1. Jetson Orin Nano (Production)
-Run the automated setup script to install PyTorch/OpenCV with CUDA support and other dependencies.
-```bash
-chmod +x setup_jetson.sh
-./setup_jetson.sh
-```
-*Note: Building OpenCV from source can take 1-2 hours.*
+**Recommended Python Version:** Python 3.10 (Default on JetPack 6)
+
+1. **Create Virtual Environment**
+   It is crucial to use `--system-site-packages` to access pre-installed JetPack libraries (TensorRT, CUDA).
+   ```bash
+   # Install venv module if missing
+   sudo apt-get install python3-venv
+
+   # Create venv
+   python3 -m venv .venv --system-site-packages
+
+   # Activate venv
+   source .venv/bin/activate
+   ```
+
+2. **Run Setup Script**
+   Run the automated setup script to install PyTorch/OpenCV with CUDA support.
+   ```bash
+   chmod +x setup_jetson.sh
+   ./setup_jetson.sh
+   ```
+   *Note: Building OpenCV from source can take 1-2 hours.*
 
 ### 2. Local Development (Mac/PC)
 For testing logic without GPU acceleration:

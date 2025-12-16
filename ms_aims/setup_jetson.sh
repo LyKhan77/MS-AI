@@ -5,6 +5,21 @@ set -e
 
 echo "Starting MS-AIM Setup for Jetson Orin Nano..."
 
+# 0. Check for Virtual Environment
+if [[ -z "$VIRTUAL_ENV" ]]; then
+    echo -e "\033[0;31mWARNING: No virtual environment detected!\033[0m"
+    echo "It is highly recommended to run this script inside a virtual environment."
+    echo "Please create one with: python3 -m venv .venv --system-site-packages"
+    echo ""
+    read -p "Do you want to proceed anyway? (y/N) " proceed
+    if [[ "$proceed" != "y" && "$proceed" != "Y" ]]; then
+        echo "Aborting."
+        exit 1
+    fi
+else
+    echo -e "\033[0;32mVirtual environment detected: $VIRTUAL_ENV\033[0m"
+fi
+
 # 1. System Updates & Dependencies
 echo "[1/4] Installing System Dependencies..."
 sudo apt-get update
