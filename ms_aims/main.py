@@ -7,7 +7,7 @@ import numpy as np
 from nicegui import ui, app
 
 # --- KONFIGURASI SEDERHANA (Nanti pindahkan ke yaml) ---
-CAMERA_ID = 0  # Ganti ke '/dev/video0' atau string RTSP jika perlu
+CAMERA_ID = "rtsp://admin:gspe-intercon@192.168.0.64:554/Streaming/Channels/1"  # Ganti ke '/dev/video0' atau string RTSP jika perlu
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
 
