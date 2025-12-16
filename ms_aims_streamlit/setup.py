@@ -74,10 +74,27 @@ def check_huggingface_auth():
             return True
         else:
             print("⚠️ Hugging Face authentication not found")
-            print("   Run: huggingface-cli login")
+            print("   Run: huggingface-cli login (optional for advanced features)")
             return False
     except ImportError:
         print("⚠️ huggingface-hub not installed")
+        return False
+
+def check_sam3_availability():
+    """Check if SAM-3 is available in current transformers version"""
+    try:
+        import sys
+        sys.path.append('src')
+        from detector import SAM3_AVAILABLE
+        if SAM3_AVAILABLE:
+            print("✅ SAM-3 available in transformers")
+            return True
+        else:
+            print("⚠️ SAM-3 not yet available in this transformers version")
+            print("   System will use fallback detection (contour-based)")
+            return False
+    except Exception as e:
+        print(f"⚠️ Could not check SAM-3 availability: {e}")
         return False
 
 def create_directories():
@@ -126,6 +143,9 @@ def main():
     # Check Hugging Face auth
     hf_auth = check_huggingface_auth()
     
+    # Check SAM-3 availability
+    sam3_available = check_sam3_availability()
+    
     # Create directories
     create_directories()
     
@@ -135,7 +155,8 @@ def main():
     print(f"   Python: ✅")
     print(f"   GPU: {'✅' if gpu_available else '⚠️ CPU only'}")
     print(f"   Dependencies: {'✅' if deps_ok else '❌'}")
-    print(f"   Hugging Face: {'✅' if hf_auth else '⚠️ Need login'}")
+    print(f"   SAM-3: {'✅' if sam3_available else '⚠️ Using fallback detection'}")
+    print(f"   Hugging Face: {'✅' if hf_auth else '⚠️ Optional for advanced features'}")
     
     if not deps_ok:
         print("\n📦 Installing missing dependencies...")
@@ -146,10 +167,11 @@ def main():
     print("\n✅ Setup completed successfully!")
     print("\n🚀 To run the application:")
     print("   streamlit run app.py")
+    print("   Or use: ./run.sh")
     
-    if not hf_auth:
-        print("\n⚠️ Don't forget to login to Hugging Face:")
-        print("   huggingface-cli login")
+    if not sam3_available:
+        print("\n📋 Note: Using fallback detection (contour-based)")
+        print("   For SAM-3 features, update transformers when available")
     
     return True
 

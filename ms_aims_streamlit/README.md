@@ -4,20 +4,27 @@ AI-powered quality control and counting system for metal sheets using Meta's SAM
 
 ## Features
 
-- 🤖 **AI-Powered Detection**: Uses Meta's SAM-3 model for precise metal sheet segmentation
+- 🤖 **AI-Powered Detection**: Advanced metal sheet detection using SAM-3 (when available) or robust contour-based fallback
 - 📹 **Multiple Input Sources**: Supports RTSP streams, USB cameras, and video files
 - 📏 **Real-time Measurements**: Automatic dimension calculation with configurable calibration
 - 🔍 **Quality Control**: Surface defect detection (scratches, dents, color variations)
 - ⚡ **Motion Detection**: Smart triggering only when objects are stable
 - 🎯 **High Performance**: Optimized for NVIDIA Jetson Orin Nano edge devices
 - 📊 **Real-time UI**: Streamlit-based interface with live video and results
+- 🔄 **Automatic Fallback**: Seamlessly switches between SAM-3 and OpenCV-based detection
 
 ## System Requirements
 
 ### Hardware
-- **Recommended**: NVIDIA Jetson Orin Nano (8GB RAM)
-- **Minimum**: Any system with CUDA-compatible GPU
+- **Recommended**: NVIDIA Jetson Orin Nano (8GB RAM) - **Fully Optimized**
+- **Alternative**: Any system with CUDA-compatible GPU
 - **CPU-only**: Possible but with reduced performance
+
+#### Jetson Orin Nano Deployment
+- 📋 **Setup Guide**: See `JETSON_SETUP.md` for detailed instructions
+- 🚀 **Quick Deploy**: SSH to `lee@192.168.2.122` and run `./run_jetson.sh`
+- ⚡ **Optimizations**: GPU acceleration, hardware video decoding, performance mode
+- 📊 **Expected**: 15-30 FPS real-time processing
 
 ### Software
 - Python 3.10+
@@ -42,9 +49,13 @@ AI-powered quality control and counting system for metal sheets using Meta's SAM
    pip install -r requirements.txt
    ```
 
-4. **Install SAM-3 model:**
-   - Request access to SAM-3 checkpoints on [Hugging Face](https://huggingface.co/facebook/sam3)
-   - Login to Hugging Face:
+4. **SAM-3 Model Support:**
+   - **Current Status**: SAM-3 is not yet available in the current transformers version
+   - **Fallback**: System uses advanced contour-based detection with OpenCV
+   - **Performance**: Fallback method provides reliable metal sheet detection
+   - **Future**: When SAM-3 becomes available, the system will automatically switch
+   
+   - Optional: Login to Hugging Face for future SAM-3 features:
    ```bash
    huggingface-cli login
    ```

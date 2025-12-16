@@ -73,8 +73,25 @@ class VideoStreamer:
             else:  # RTSP or USB
                 # Configure capture for RTSP if needed
                 if input_type == InputSource.RTSP:
-                    # Optimize for RTSP streaming
-                    self.cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
+                    # Optimize for RTSP streaming with Jetson acceleration
+                    # Try GStreamer first (Jetson optimized)
+                    try:
+                        gstreamer_pipeline = (
+                            f"rtspsrc location={source} latency=0 ! "
+                            "rtph264depay ! h264parse ! nvv4l2decoder ! "
+                            "nvvidconv ! video/x-raw,format=BGRx ! "
+                            "videoconvert ! video/x-raw,format=BGR ! appsink"
+                        )
+                        self.cap = cv2.VideoCapture(gstreamer_pipeline, cv2.CAP_GSTREAMER)
+                        if self.cap.isOpened():
+                            logger.info("Using GStreamer with hardware acceleration")
+                        else:
+                            raise Exception("GStreamer failed")
+                    except:
+                        # Fallback to FFmpeg
+                        logger.warning("GStreamer failed, using FFmpeg fallback")
+                        self.cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
+                    
                     if self.cap.isOpened():
                         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer for real-time
                         self.cap.set(cv2.CAP_PROP_FPS, 30)

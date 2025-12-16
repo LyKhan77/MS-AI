@@ -35,13 +35,24 @@ from ui_components import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Page configuration
+# Page configuration with Jetson optimizations
 st.set_page_config(
     page_title="Metal Sheet AI Inspection System",
     page_icon="🔧",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Jetson performance optimizations
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
+
+# Enable display for Jetson
+try:
+    os.environ['DISPLAY'] = ':0'
+except:
+    pass
 
 # Session state initialization
 def init_session_state():
