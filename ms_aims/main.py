@@ -145,61 +145,66 @@ def index():
         # LEFT: Video Feed & Source Control
         with ui.card().classes('w-2/3 h-full'):
             
-            # --- DYNAMIC INPUT CONTROL ---
+            # --- INPUT SOURCE CONTROL ---
             with ui.row().classes('w-full items-center gap-4 mb-2'):
                 ui.label('Input Source:').classes('font-bold')
-                
-                # Container for Dynamic Inputs
-                input_container = ui.row().classes('flex-grow items-center gap-2')
-
-                def update_input_ui():
-                    input_container.clear()
-                    with input_container:
-                        if input_source_type == 'STREAM':
-                            # RTSP Input
-                            ui.input(label='RTSP URL', value=input_source_path, 
-                                     on_change=on_path_submit).classes('w-full').props('outlined dense')
-                        else:
-                            # Video Select
-                            videos = get_video_files()
-                            if not videos:
-                                ui.label('No videos found in ms_aims/data/videos').classes('text-red-500 text-sm')
-                            
-                            # Initial value for select
-                            current_val = input_source_path if input_source_path in videos else (videos[0] if videos else None)
-                            
-                            ui.select(videos, label='Select Video File', value=current_val,
-                                      on_change=on_path_submit).classes('w-full').props('outlined dense')
-
-                def on_source_change(e):
-                    global input_source_type, input_source_path, source_changed
-                    input_source_type = e.value
-                    
-                    # Set default path when switching
-                    if input_source_type == 'STREAM':
-                        input_source_path = DEFAULT_RTSP
-                    else:
-                        videos = get_video_files()
-                        input_source_path = videos[0] if videos else ""
-                    
-                    source_changed = True
-                    update_input_ui() # Refresh UI
-                    ui.notify(f"Switched to {input_source_type}")
-
-                def on_path_submit(e):
-                     global input_source_path, source_changed
-                     input_source_path = e.value
-                     source_changed = True
-                     # ui.notify(f"Source Updated: {input_source_path}")
-
-                # Radio Button
-                ui.radio(['STREAM', 'VIDEO'], value=input_source_type, on_change=on_source_change).props('inline')
-                
-                # Initial Render
-                update_input_ui()
             
-            # Video Container
-            video_image = ui.interactive_image().classes('w-full rounded bg-black')
+            # Dynamic container based on selected input source
+            input_container = ui.row().classes('w-full mt-2')
+            
+            # Define functions before they are used
+            def on_source_change(e):
+                global input_source_type, input_source_path, source_changed
+                input_source_type = e.value
+                
+                # Set default path when switching
+                if input_source_type == 'STREAM':
+                    input_source_path = DEFAULT_RTSP
+                else:
+                    # For video mode, clear path until file is selected
+                    input_source_path = ""
+                
+                source_changed = True
+                update_input_ui()  # Refresh UI
+                ui.notify(f"Switched to {input_source_type}")
+
+            def on_file_select(e):
+                global input_source_path, source_changed
+                if e.files:
+                    # Get the full path of the selected file
+                    selected_file = e.files[0]
+                    input_source_path = selected_file.name or str(selected_file)
+                    source_changed = True
+                    update_input_ui()  # Refresh UI to show selected file
+                    ui.notify(f"Video selected: {os.path.basename(input_source_path)}")
+                else:
+                    ui.notify("No file selected", type='warning')
+            
+            def update_input_ui():
+                input_container.clear()
+                with input_container:
+                    if input_source_type == 'STREAM':
+                        # For STREAM mode, no input needed - just show a label
+                        ui.label('Camera stream will be displayed below').classes('text-sm text-gray-600 w-full')
+                    else:
+                        # For VIDEO mode, show file browser
+                        file_input = ui.file_input(accept='.mp4,.avi,.mkv,.mov', label='Select Video File', 
+                                                  on_change=on_file_select).classes('w-full').props('outlined dense')
+                        
+                        # Show current video file if any
+                        if input_source_path and input_source_path.startswith('/'):
+                            file_display = os.path.basename(input_source_path)
+                            ui.label(f'Selected: {file_display}').classes('text-sm text-blue-600 mt-1')
+            
+            # Radio Button for Stream/Video selection
+            with ui.row().classes('w-full'):
+                ui.radio(['STREAM', 'VIDEO'], value=input_source_type, on_change=on_source_change).props('inline')
+            
+            # Initial Render
+            update_input_ui()
+            
+            # Video Container (id="c16")
+            video_image = ui.interactive_image().classes('w-full rounded bg-black').props('id="c16"')
         
         # RIGHT: Control Panel
         with ui.card().classes('w-1/3 h-full'):
