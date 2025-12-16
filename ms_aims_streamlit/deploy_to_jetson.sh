@@ -66,9 +66,14 @@ ssh $JETSON_USER@$JETSON_IP << 'EOF'
 cd ~/ms_aims_streamlit
 chmod +x run_jetson.sh
 chmod +x jetson_setup.py
+chmod +x install_jetson.sh
 
 # Create necessary directories
 mkdir -p data/inputs data/outputs_ng data/outputs_ok data/logs models/sam3
+
+# Install dependencies
+echo "📦 Installing dependencies on Jetson..."
+./install_jetson.sh
 EOF
 
 # Check Jetson status

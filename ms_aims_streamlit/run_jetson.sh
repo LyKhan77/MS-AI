@@ -23,9 +23,50 @@ fi
 echo "Activating virtual environment..."
 source venv/bin/activate
 
-# Check dependencies
-echo "Checking dependencies..."
-python3 jetson_setup.py
+# Install dependencies
+echo "📦 Installing dependencies for Jetson..."
+pip install --upgrade pip
+
+# Install PyTorch for Jetson (CUDA 11.8 for JetPack 5.1)
+echo "Installing PyTorch for Jetson..."
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Install other dependencies
+echo "Installing other packages..."
+pip install streamlit>=1.35.0
+pip install opencv-python-headless>=4.9.0
+pip install numpy>=1.24.0
+pip install Pillow>=10.0.0
+pip install transformers>=4.45.0
+pip install accelerate>=0.34.0
+pip install supervision>=0.22.0
+pip install scikit-image>=0.22.0
+pip install pygame>=2.5.0
+pip install pydantic>=2.5.0
+pip install python-dotenv>=1.0.0
+pip install tqdm>=4.66.0
+
+# Install Jetson-specific packages
+echo "Installing Jetson-specific packages..."
+pip install jetson-stats py-cpuinfo psutil
+
+# Check if everything is installed correctly
+echo "🔧 Checking installation..."
+python3 -c "
+import streamlit
+import cv2
+import numpy as np
+import torch
+import transformers
+print('✅ All core dependencies installed successfully!')
+print(f'   Streamlit: {streamlit.__version__}')
+print(f'   OpenCV: {cv2.__version__}')
+print(f'   PyTorch: {torch.__version__}')
+print(f'   CUDA Available: {torch.cuda.is_available()}')
+if torch.cuda.is_available():
+    print(f'   GPU: {torch.cuda.get_device_name(0)}')
+print(f'   Transformers: {transformers.__version__}')
+"
 
 # Set CUDA optimizations
 export CUDA_VISIBLE_DEVICES=0
