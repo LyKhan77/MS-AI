@@ -6,46 +6,92 @@ import threading
 import numpy as np
 from nicegui import ui, app
 
-# --- KONFIGURASI SEDERHANA (Nanti pindahkan ke yaml) ---
-CAMERA_ID = "rtsp://admin:gspe-intercon@192.168.0.64:554/Streaming/Channels/1"  # Ganti ke '/dev/video0' atau string RTSP jika perlu
+# Import Core Modules
+from src.ai_engine import AIEngine
+from src.dimension import DimensionCalculator
+
+# --- KONFIGURASI SEDERHANA ---
+# CAMERA_ID = 0 
+CAMERA_ID = "rtsp://admin:gspe-intercon@192.168.0.64:554/Streaming/Channels/1"
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
 
-# --- STATUS GLOBAL (Shared State) ---
-# Di production nanti gunakan Manager/Queue dari multiprocessing
-# app.storage.user['status'] = 'IDLE' # REMOVED: Caused context error
-SYSTEM_STATUS = 'IDLE' # Global system state
+# --- STATUS GLOBAL & MODULES ---
+SYSTEM_STATUS = 'IDLE'
 latest_frame = None
 is_running = True
+current_dimensions = {'w': 0, 'h': 0}
 
-# --- 1. CAMERA HANDLER (Running in Background Thread) ---
+# Initialize Modules
+ai_engine = AIEngine()
+ai_engine.load_model()
+dim_calc = DimensionCalculator(calibration_factor=None) # Uncalibrated initially
+
+# --- 1. CAMERA HANDLER (Background Thread) ---
 def camera_loop():
-    global latest_frame, is_running
-    cap = cv2.VideoCapture(CAMERA_ID)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
+    global latest_frame, is_running, current_dimensions, SYSTEM_STATUS
     
-    print(f"Camera started on ID {CAMERA_ID}")
+    # Retry logic for Camera
+    cap = None
+    while is_running and cap is None:
+        try:
+            print(f"Connecting to Camera: {CAMERA_ID}")
+            cap = cv2.VideoCapture(CAMERA_ID)
+            if not cap.isOpened():
+                print("Failed to open camera. Retrying in 5s...")
+                cap = None
+                time.sleep(5)
+        except Exception as e:
+            print(f"Camera Error: {e}")
+            time.sleep(5)
 
+    # Main Loop
     while is_running:
         ret, frame = cap.read()
         if ret:
-            # --- SIMULASI AI PROCESS DI SINI ---
-            # Nanti logika SAM3 dan Deteksi dimasukkan di sini
-            # Contoh sederhana: Gambar kotak merah jika status NG
+            # Resize for consistent processing speed if needed
+            # frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
             
-            # Encode frame ke JPEG lalu ke Base64 untuk dikirim ke UI
+            # --- AI PROCESSING PHASE 2 ---
+            # 1. Segmentation
+            contour = ai_engine.run_segmentation(frame)
+            
+            if contour is not None:
+                # 2. Draw Contour
+                cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
+                
+                # 3. Calculate Dimensions
+                w_mm, h_mm, box_points = dim_calc.measure_contour(contour)
+                current_dimensions['w'] = w_mm
+                current_dimensions['h'] = h_mm
+                
+                # Draw Bounding Box
+                cv2.drawContours(frame, [box_points], 0, (0, 0, 255), 2)
+                
+                # Draw Text
+                label = f"{w_mm:.1f} x {h_mm:.1f} mm"
+                cv2.putText(frame, label, (box_points[0][0], box_points[0][1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                
+                SYSTEM_STATUS = "DETECTED"
+            else:
+                SYSTEM_STATUS = "IDLE"
+
+            # Encode to JPEG for Web UI
             _, buffer = cv2.imencode('.jpg', frame)
             b64_image = base64.b64encode(buffer).decode('utf-8')
             latest_frame = f'data:image/jpeg;base64,{b64_image}'
         else:
-            print("Failed to read camera.")
-            time.sleep(1)
+            print("Camera stream lost. Reconnecting...")
+            cap.release()
+            time.sleep(2)
+            cap = cv2.VideoCapture(CAMERA_ID)
         
-        # Limit FPS agar CPU tidak 100% (Sleep kecil)
+        # Limit FPS
         time.sleep(0.03) 
 
-    cap.release()
+    if cap:
+        cap.release()
     print("Camera released.")
 
 # --- 2. UI LOGIC (NiceGUI) ---
@@ -57,81 +103,95 @@ def index():
         ui.space()
         status_label = ui.label('SYSTEM READY').classes('text-sm font-mono bg-green-600 px-2 rounded')
 
-    # Main Content Split (Video & Controls)
+    # Main Content
     with ui.row().classes('w-full q-pa-md'):
         
-        # KIRI: Video Feed
+        # Video Feed
         with ui.card().classes('w-2/3 h-full'):
             ui.label('Live Monitoring').classes('text-lg font-bold mb-2')
-            # Image container placeholder
             video_image = ui.interactive_image().classes('w-full rounded bg-black')
         
-        # KANAN: Control & Stats
+        # Control Panel
         with ui.card().classes('w-1/3 h-full'):
             ui.label('Control Panel').classes('text-lg font-bold mb-4')
             
-            # Indikator Dimensi (Dummy)
+            # Dimensions Display
             with ui.grid(columns=2):
                 ui.label('Length:')
-                dim_l = ui.label('0 mm').classes('font-mono font-bold')
+                dim_l = ui.label('0.0 mm').classes('font-mono font-bold text-xl')
                 ui.label('Width:')
-                dim_w = ui.label('0 mm').classes('font-mono font-bold')
+                dim_w = ui.label('0.0 mm').classes('font-mono font-bold text-xl')
 
             ui.separator().classes('my-4')
             
-            # Log Panel
-            log_area = ui.log().classes('w-full h-40 bg-gray-100 rounded p-2 text-xs')
+            # Calibration Section
+            ui.label('Calibration').classes('font-bold')
+            cal_input = ui.number(label='Known Length (mm)', value=100).classes('w-full')
             
-            # Tombol Manual Trigger (Untuk Testing)
-            def manual_trigger():
-                global SYSTEM_STATUS
-                SYSTEM_STATUS = 'PROCESSING'
-                log_area.push(f'{time.strftime("%H:%M:%S")} - Manual Trigger Activated')
-                ui.notify('Processing...', type='info')
-                # Simulasi hasil
-                status_label.set_text('PROCESSING...')
-                status_label.classes(replace='bg-yellow-600')
-                
-                # Simulasi delay AI
-                ui.timer(1.0, lambda: finish_process(), once=True)
+            def calibrate_now():
+                # Simple logic: assume current detected width corresponds to known length
+                # In real app, might want to specify which side
+                if current_dimensions['w'] > 0:
+                    # Use the width (longest side usually) as reference
+                    # Or calculate hypotenuse if diagonal. 
+                    # For now, let's just use the 'Width' read by the system.
+                    # We need the pixel width, but our current_dimensions are already mm (if calibrated)
+                    # or uncalibrated units if factor is 1.0.
+                    
+                    # To do this correctly, we need the raw pixel width from the engine.
+                    # But for simplicity in Phase 2, let's assume dim_calc.pixels_to_mm 
+                    # was returning raw pixels if factor was 1.0 (which it does if None).
+                    
+                    # Note: measure_contour returns 0.0 if not calibrated? 
+                    # Let's fix dimension.py behavior to return pixels if factor is None.
+                    pass 
 
-            def finish_process():
-                global SYSTEM_STATUS
-                # Random Result simulation
-                import random
-                is_defect = random.choice([True, False])
+                # Better approach: We need the pixel reading.
+                # Since we don't have direct access to "current pixels" here easily without global,
+                # let's cheat slightly and use the 'current_dimensions' assuming they are 
+                # pixels if not yet calibrated.
                 
-                if is_defect:
-                    SYSTEM_STATUS = 'NG'
-                    status_label.set_text('NG - DEFECT DETECTED')
-                    status_label.classes(replace='bg-red-600')
-                    ui.notify('REJECTED!', type='negative')
-                    log_area.push('Result: NG (Scratched)')
+                # Check if system is uncalibrated
+                if dim_calc.calibration_factor is None:
+                     # w_mm is actually w_pixels here
+                     pixel_val = current_dimensions['w']
                 else:
-                    SYSTEM_STATUS = 'OK'
-                    status_label.set_text('OK - PASS')
-                    status_label.classes(replace='bg-green-600')
-                    ui.notify('PASSED', type='positive')
-                    log_area.push('Result: OK')
-                    dim_l.set_text(f'{random.randint(290,310)} mm')
-                    dim_w.set_text(f'{random.randint(190,210)} mm')
+                     # Back-calculate pixels? Or just reset factor to None first?
+                     # Let's simple reset for now if needed.
+                     pixel_val = current_dimensions['w'] * dim_calc.calibration_factor
                 
-                # Reset to idle after a while?
-                # SYSTEM_STATUS = 'IDLE'
+                if pixel_val > 0:
+                     factor = dim_calc.set_calibration(pixel_val, cal_input.value)
+                     ui.notify(f'Calibrated! Factor: {factor:.2f} px/mm', type='positive')
+                else:
+                     ui.notify('No object detected to calibrate!', type='warning')
 
-            ui.button('TRIGGER CHECK', on_click=manual_trigger).classes('w-full bg-blue-700 text-white')
+            ui.button('CALIBRATE (Using Width)', on_click=calibrate_now).classes('w-full bg-orange-600 text-white')
+
+            ui.separator().classes('my-4')
+            log_area = ui.log().classes('w-full h-40 bg-gray-100 rounded p-2 text-xs')
 
     # --- 3. UI UPDATE LOOP ---
-    # Fungsi ini dipanggil browser setiap 100ms untuk update gambar
-    async def update_video_feed():
+    async def update_state():
+        # Update Image
         if latest_frame:
             video_image.set_source(latest_frame)
+        
+        # Update Labels
+        dim_l.set_text(f"{current_dimensions['w']:.1f} mm")
+        dim_w.set_text(f"{current_dimensions['h']:.1f} mm")
+        
+        # Update Status
+        status_label.set_text(SYSTEM_STATUS)
+        if SYSTEM_STATUS == 'DETECTED':
+            status_label.classes(replace='bg-blue-600')
+        elif SYSTEM_STATUS == 'IDLE':
+             status_label.classes(replace='bg-gray-600')
 
-    ui.timer(0.1, update_video_feed) # 10 FPS update rate di UI
+    ui.timer(0.1, update_state)
 
-# --- LIFECYCLE MANAGEMENT ---
+# --- LIFECYCLE ---
 def startup():
-    # Jalankan kamera di thread terpisah agar UI tidak freeze
     t = threading.Thread(target=camera_loop, daemon=True)
     t.start()
 
@@ -142,8 +202,5 @@ def shutdown():
 app.on_startup(startup)
 app.on_shutdown(shutdown)
 
-# Jalankan App
 if __name__ in {"__main__", "__mp_main__"}:
-    # native=False agar tidak error di Jetson (Headless)
-    # port 8080 agar mudah diakses
     ui.run(title='MS-AIMS', port=8080, reload=False, native=False, storage_secret='ms-aims-secret-key')
