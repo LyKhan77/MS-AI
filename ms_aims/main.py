@@ -154,7 +154,7 @@ def index():
             
             # Define functions before they are used
             def on_source_change(e):
-                global input_source_type, input_source_path, source_changed
+                global input_source_type, input_source_path, source_changed, latest_frame
                 input_source_type = e.value
                 
                 # Set default path when switching
@@ -163,6 +163,8 @@ def index():
                 else:
                     # For video mode, clear path until file is selected
                     input_source_path = ""
+                    # Clear the latest frame when switching to video mode
+                    latest_frame = None
                 
                 source_changed = True
                 update_input_ui()  # Refresh UI
@@ -201,6 +203,9 @@ def index():
                     if input_source_type == 'STREAM':
                         # For STREAM mode, no input needed - just show a label
                         ui.label('Camera stream will be displayed below').classes('text-sm text-gray-600 w-full')
+                        # Hide placeholder and show video image
+                        video_placeholder.classes('hidden')
+                        video_image.classes('w-full rounded bg-black')
                     else:
                         # For VIDEO mode, show file browser
                         with ui.row().classes('w-full'):
@@ -212,6 +217,13 @@ def index():
                         if input_source_path:
                             file_display = os.path.basename(input_source_path)
                             ui.label(f'Selected: {file_display}').classes('text-sm text-blue-600 mt-1')
+                            # Hide placeholder and show video image
+                            video_placeholder.classes('hidden')
+                            video_image.classes('w-full rounded bg-black')
+                        else:
+                            # Show placeholder when no video is selected
+                            video_placeholder.classes('w-full h-64 bg-gray-200 rounded items-center justify-center flex flex-col')
+                            video_image.classes('hidden')
             
             # Radio Button for Stream/Video selection
             with ui.row().classes('w-full'):
@@ -222,6 +234,12 @@ def index():
             
             # Video Container (id="c16")
             video_image = ui.interactive_image().classes('w-full rounded bg-black').props('id="c16"')
+            
+            # Create a placeholder for video mode
+            video_placeholder = ui.row().classes('w-full h-64 bg-gray-200 rounded items-center justify-center hidden')
+            with video_placeholder:
+                ui.icon('movie', size='3xl').classes('text-gray-400')
+                ui.label('No video selected').classes('text-gray-500 mt-2')
         
         # RIGHT: Control Panel
         with ui.card().classes('w-1/3 h-full'):
@@ -260,7 +278,9 @@ def index():
     # --- 3. UI UPDATE LOOP ---
     async def update_state():
         if latest_frame:
-            video_image.set_source(latest_frame)
+            # Only update video image if it's visible (not hidden)
+            if 'hidden' not in video_image.classes:
+                video_image.set_source(latest_frame)
         
         dim_l.set_text(f"{current_dimensions['w']:.1f} mm")
         dim_w.set_text(f"{current_dimensions['h']:.1f} mm")
