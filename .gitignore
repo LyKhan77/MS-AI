@@ -24,3 +24,4 @@ htmlcov/
 .ipynb_checkpoints/
 *.egg-info/
 .eggs/  
+log.md

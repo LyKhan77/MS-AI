@@ -77,10 +77,49 @@ echo "Starting Metal Sheet AI Inspection System..."
 echo "Application will be available at: http://localhost:8501"
 echo "Or access remotely: http://$(hostname -I | awk '{print $1}'):8501"
 
-# Start with optimized settings
-python3 -u app.py \
+# Check if everything is installed correctly first
+echo "🔧 Checking installation before starting..."
+python3 -c "
+import sys
+import os
+sys.path.append(os.getcwd())
+
+try:
+    import streamlit
+    import cv2
+    import numpy as np
+    import torch
+    import transformers
+    from detector import SAM3Engine
+    
+    print('✅ All dependencies verified successfully!')
+    print(f'   Streamlit: {streamlit.__version__}')
+    print(f'   PyTorch: {torch.__version__} (CUDA: {torch.cuda.is_available()})')
+    
+except ImportError as e:
+    print(f'❌ Import error: {e}')
+    print('Please run ./fix_jetson.sh first')
+    sys.exit(1)
+except Exception as e:
+    print(f'❌ Other error: {e}')
+    print('Please check installation')
+    sys.exit(1)
+"
+
+# Set CUDA optimizations
+export CUDA_VISIBLE_DEVICES=0
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+
+# Run the application with Jetson optimizations using streamlit run
+echo "Starting Metal Sheet AI Inspection System..."
+echo "Application will be available at: http://localhost:8501"
+echo "Or access remotely: http://$(hostname -I | awk '{print $1}'):8501"
+
+# Start with streamlit run command
+streamlit run app.py \
     --server.headless false \
     --server.address 0.0.0.0 \
     --server.port 8501 \
     --browser.gatherUsageStats false \
-    --server.maxUploadSize 200
+    --server.maxUploadSize 200 \
+    --server.fileWatcherType none
