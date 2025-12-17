@@ -57,24 +57,22 @@ except:
 # Session state initialization
 def init_session_state():
     """Initialize session state variables"""
-    if 'streamer' not in st.session_state:
-        st.session_state.streamer = None
-    if 'detector' not in st.session_state:
-        st.session_state.detector = None
-    if 'processor' not in st.session_state:
-        st.session_state.processor = None
-    if 'motion_detector' not in st.session_state:
-        st.session_state.motion_detector = None
-    if 'is_running' not in st.session_state:
-        st.session_state.is_running = False
-    if 'current_frame' not in st.session_state:
-        st.session_state.current_frame = None
-    if 'last_results' not in st.session_state:
-        st.session_state.last_results = None
-    if 'processing_thread' not in st.session_state:
-        st.session_state.processing_thread = None
-    if 'temp_video_path' not in st.session_state:
-        st.session_state.temp_video_path = None
+    # Initialize all required session state variables
+    required_states = {
+        'streamer': None,
+        'detector': None, 
+        'processor': None,
+        'motion_detector': None,
+        'is_running': False,
+        'current_frame': None,
+        'last_results': None,
+        'processing_thread': None,
+        'temp_video_path': None
+    }
+    
+    for key, default_value in required_states.items():
+        if key not in st.session_state:
+            st.session_state[key] = default_value
 
 def load_models():
     """Load AI models"""
@@ -111,58 +109,62 @@ def processing_loop():
     """Main processing loop running in separate thread"""
     logger.info("Processing loop started")
     
-    while st.session_state.is_running:
-        try:
-            # Get frame from streamer
-            frame = st.session_state.streamer.get_latest_frame()
-            
-            if frame is not None:
-                st.session_state.current_frame = frame.copy()
+    try:
+        while st.session_state.is_running:
+            try:
+                # Get frame from streamer
+                frame = st.session_state.streamer.get_latest_frame()
                 
-                # Check for motion/stability
-                is_stable = st.session_state.motion_detector.update(frame)
-                
-                if is_stable and st.session_state.detector:
-                    # Process frame with SAM-3
-                    detection_result = st.session_state.detector.detect_sheets(
-                        frame,
-                        text_prompt="metal sheet",
-                        use_cache=True
-                    )
+                if frame is not None:
+                    st.session_state.current_frame = frame.copy()
                     
-                    if detection_result:
-                        # Calculate dimensions
-                        pixel_to_mm = st.session_state.processor.dimension_calculator.pixel_to_mm_ratio
-                        detection_result = st.session_state.detector.calculate_dimensions(
-                            detection_result, pixel_to_mm
+                    # Check for motion/stability
+                    is_stable = st.session_state.motion_detector.update(frame)
+                    
+                    if is_stable and st.session_state.detector:
+                        # Process frame with SAM-3
+                        detection_result = st.session_state.detector.detect_sheets(
+                            frame,
+                            text_prompt="metal sheet",
+                            use_cache=True
                         )
                         
-                        # Detect defects
-                        detection_result = st.session_state.detector.detect_defects(
-                            detection_result, frame, 0.1
-                        )
-                        
-                        # Convert to dict for session state
-                        st.session_state.last_results = {
-                            "count": detection_result.count,
-                            "masks": detection_result.masks,
-                            "boxes": detection_result.boxes,
-                            "scores": detection_result.scores,
-                            "processing_time": detection_result.processing_time,
-                            "dimensions": detection_result.dimensions,
-                            "quality_status": detection_result.quality_status
-                        }
-                
-                # Small delay to prevent excessive CPU usage
-                time.sleep(0.01)
-            else:
+                        if detection_result:
+                            # Calculate dimensions
+                            pixel_to_mm = st.session_state.processor.dimension_calculator.pixel_to_mm_ratio
+                            detection_result = st.session_state.detector.calculate_dimensions(
+                                detection_result, pixel_to_mm
+                            )
+                            
+                            # Detect defects
+                            detection_result = st.session_state.detector.detect_defects(
+                                detection_result, frame, 0.1
+                            )
+                            
+                            # Convert to dict for session state
+                            st.session_state.last_results = {
+                                "count": detection_result.count,
+                                "masks": detection_result.masks,
+                                "boxes": detection_result.boxes,
+                                "scores": detection_result.scores,
+                                "processing_time": detection_result.processing_time,
+                                "dimensions": detection_result.dimensions,
+                                "quality_status": detection_result.quality_status
+                            }
+                    
+                    # Small delay to prevent excessive CPU usage
+                    time.sleep(0.01)
+                else:
+                    time.sleep(0.1)
+                    
+            except Exception as e:
+                logger.error(f"Error in processing loop: {e}")
                 time.sleep(0.1)
                 
-        except Exception as e:
-            logger.error(f"Error in processing loop: {e}")
-            time.sleep(0.1)
-    
-    logger.info("Processing loop stopped")
+    except Exception as e:
+        logger.error(f"Critical error in processing loop: {e}")
+    finally:
+        logger.info("Processing loop stopped")
 
 def start_monitoring(config: Dict):
     """Start video monitoring"""
