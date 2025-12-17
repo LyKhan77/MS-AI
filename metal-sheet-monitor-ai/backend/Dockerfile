@@ -32,7 +32,7 @@ RUN pip3 install --no-cache-dir --extra-index-url https://pypi.org/simple -r req
 # Compile manually for Jetson
 RUN git clone https://github.com/facebookresearch/segment-anything-2.git && \
     cd segment-anything-2 && \
-    pip3 install -e .
+    pip3 install --no-cache-dir --extra-index-url https://pypi.org/simple -e .
 
 # 5. Copy source code
 COPY . .
