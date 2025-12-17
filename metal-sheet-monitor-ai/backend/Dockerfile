@@ -25,7 +25,8 @@ RUN pip3 install --upgrade pip
 # 3. Copy and Install Python Requirements
 COPY requirements.txt .
 # --no-deps on ultralytics to prevent torch overwrite
-RUN pip3 install -r requirements.txt
+# Add extra-index-url to ensure we can pull pure python packages like ultralytics if dusty's repo fails
+RUN pip3 install --no-cache-dir --extra-index-url https://pypi.org/simple -r requirements.txt
 
 # 4. Install SAM 2 (Segment Anything Model 2) from Source
 # Compile manually for Jetson
