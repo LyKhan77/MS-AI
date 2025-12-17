@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    container_name: metal_ai_backend
+    # Runtime NVIDIA mandatory for Jetson
+    runtime: nvidia
+    network_mode: host # Recommended for low latency RTSP
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+      # SAM 2 Checkpoint path
+      - SAM2_CHECKPOINT_PATH=/app/weights/sam2_hiera_tiny.pt
+    volumes:
+      # Map host folders to container
+      - ./backend:/app
+      - ./data:/app/data
+      # Mount jtop socket for stats
+      - /run/jtop.sock:/run/jtop.sock
+    restart: unless-stopped
+
+  # Frontend service will be added here later
