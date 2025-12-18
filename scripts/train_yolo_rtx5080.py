@@ -1,7 +1,6 @@
 """
 YOLOv8 Training Script for Metal Sheet Detection
-Optimized for NVIDIA RTX 5080 16GB
-Device: GPU 1
+Optimized for NVIDIA RTX 4090 16GB (Device 0)
 """
 
 import os
@@ -15,7 +14,7 @@ import yaml
 # ============================================
 
 # GPU Configuration
-DEVICE = 1  # RTX 5080 on device index 1
+DEVICE = 0  # RTX 4090 on device index 0 (fully supported)
 os.environ['CUDA_VISIBLE_DEVICES'] = str(DEVICE)
 
 # Roboflow Configuration
@@ -181,12 +180,12 @@ def train_model(data_yaml):
     print(f"  Epochs: {EPOCHS}")
     print(f"  Batch size: {BATCH_SIZE}")
     print(f"  Image size: {IMG_SIZE}")
-    print(f"  Device: GPU {DEVICE} (RTX 5080)")
+    print(f"  Device: GPU {DEVICE} (RTX 4090)")
     print(f"  Patience: {PATIENCE}")
     print(f"  Mixed Precision: {train_args['amp']}")
     
     print(f"\nStarting training...")
-    print(f"This will take approximately 2-4 hours on RTX 5080.")
+    print(f"This will take approximately 2-4 hours on RTX 4090.")
     print(f"Monitor progress at: {OUTPUT_DIR}/metal_sheet_detection/")
     print("\n" + "="*60)
     
@@ -297,7 +296,7 @@ def main():
     """Run complete training pipeline"""
     print("\n" + "="*60)
     print("YOLOV8 METAL SHEET DETECTION - TRAINING PIPELINE")
-    print("RTX 5080 16GB - Device 1")
+    print("RTX 4090 16GB - Device 0")
     print("="*60)
     
     try:
