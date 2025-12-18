@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Metal Sheet QC{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="page-header">
+        <h1 class="page-title">System Settings</h1>
+        <p class="page-description">Configure detection parameters and system options</p>
+    </div>
+    
+    <div class="settings-grid">
+        <!-- Camera Settings Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📷 Camera Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">RTSP URL</label>
+                    <input type="text" id="settingsRtspUrl" class="form-input" 
+                           placeholder="rtsp://user:pass@ip:port/stream">
+                    <small class="form-help">Configure your RTSP camera stream</small>
+                </div>
+                
+                <button class="btn btn-primary" onclick="saveRTSPSettings()">
+                    Save Camera Settings
+                </button>
+            </div>
+        </div>
+        
+        <!-- Detection Settings Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🎯 Detection Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Confidence Threshold</label>
+                    <input type="range" id="confidenceThreshold" class="form-range"
+                           min="0.5" max="1.0" step="0.05" value="0.8">
+                    <div class="range-value"><span id="confidenceValue">0.8</span></div>
+                    <small class="form-help">Minimum confidence for detection (0.5 - 1.0)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Motion Threshold</label>
+                    <input type="range" id="motionThreshold" class="form-range"
+                           min="10" max="50" step="5" value="25">
+                    <div class="range-value"><span id="motionValue">25</span></div>
+                    <small class="form-help">Sensitivity for motion detection (10 - 50)</small>
+                </div>
+                
+                <button class="btn btn-primary" onclick="saveDetectionSettings()">
+                    Save Detection Settings
+                </button>
+            </div>
+        </div>
+        
+        <!-- System Status Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">💻 System Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-row">
+                        <span class="info-label">GPU Status:</span>
+                        <span class="info-value" id="gpuStatus">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Model Loaded:</span>
+                        <span class="info-value" id="modelStatus">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Camera Connected:</span>
+                        <span class="info-value" id="cameraStatus">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Avg Inference:</span>
+                        <span class="info-value" id="avgInference">--</span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-secondary btn-block mt-lg" onclick="refreshSystemInfo()">
+                    <span>🔄</span> Refresh Status
+                </button>
+            </div>
+        </div>
+        
+        <!-- About Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">ℹ️ About</h3>
+            </div>
+            <div class="card-body">
+                <div class="about-content">
+                    <h4>Metal Sheet QC Detection System</h4>
+                    <p class="text-secondary">Version 1.0.0</p>
+                    <p class="text-secondary mb-md">AI-powered quality control for metal sheet manufacturing</p>
+                    
+                    <div class="tech-stack">
+                        <span class="tech-badge">YOLOv8</span>
+                        <span class="tech-badge">Flask</span>
+                        <span class="tech-badge">CUDA 12.6</span>
+                        <span class="tech-badge">Jetson Orin Nano</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+.page-description {
+    color: var(--text-secondary);
+    font-size: var(--font-size-lg);
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+.form-help {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.form-range {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.range-value {
+    text-align: center;
+    margin-top: var(--spacing-sm);
+    font-weight: 600;
+    color: var(--primary);
+    font-size: var(--font-size-lg);
+}
+
+.info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.about-content h4 {
+    margin-bottom: var(--spacing-xs);
+}
+
+.tech-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.tech-badge {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.mt-lg {
+    margin-top: var(--spacing-lg);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load saved settings
+    const savedRtsp = loadFromStorage('rtsp_url');
+    if (savedRtsp) {
+        document.getElementById('settingsRtspUrl').value = savedRtsp;
+    }
+    
+    // Setup range sliders
+    document.getElementById('confidenceThreshold').addEventListener('input', function(e) {
+        document.getElementById('confidenceValue').textContent = parseFloat(e.target.value).toFixed(2);
+    });
+    
+    document.getElementById('motionThreshold').addEventListener('input', function(e) {
+        document.getElementById('motionValue').textContent = e.target.value;
+    });
+    
+    // Load system info
+    refreshSystemInfo();
+});
+
+function saveRTSPSettings() {
+    const rtspUrl = document.getElementById('settingsRtspUrl').value;
+    if (rtspUrl) {
+        saveToStorage('rtsp_url', rtspUrl);
+        showToast('RTSP settings saved!', 'success');
+    } else {
+        showToast('Please enter RTSP URL', 'warning');
+    }
+}
+
+function saveDetectionSettings() {
+    const confidence = parseFloat(document.getElementById('confidenceThreshold').value);
+    const motion = parseInt(document.getElementById('motionThreshold').value);
+    
+    // Save to local storage for now
+    saveToStorage('detection_settings', { confidence, motion });
+    showToast('Detection settings saved!', 'success');
+    showToast('Note: Restart session to apply changes', 'info');
+}
+
+async function refreshSystemInfo() {
+    try {
+        const health = await API.getSystemHealth();
+        
+        document.getElementById('gpuStatus').textContent = 
+            health.ai?.cuda_available ? '✓ Available' : '✗ Not Available';
+        
+        document.getElementById('modelStatus').textContent = 
+            health.ai?.model_loaded ? '✓ Loaded' : '✗ Not Loaded';
+        
+        document.getElementById('cameraStatus').textContent = 
+            health.camera?.connected ? '✓ Connected' : '✗ Disconnected';
+        
+        document.getElementById('avgInference').textContent = 
+            `${health.ai?.avg_inference_time_ms || 0}ms`;
+        
+        showToast('System info refreshed', 'success');
+    } catch (error) {
+        showToast('Failed to fetch system info', 'error');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Metal Sheet QC Detection{% endblock %}</title>
+
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>"
+    />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/main.css') }}"
+    />
+
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-brand">
+          <span class="brand-icon">🏭</span>
+          <span class="brand-text">Metal Sheet QC</span>
+          <span class="brand-badge">v1.0</span>
+        </div>
+
+        <div class="nav-menu">
+          <a
+            href="{{ url_for('main.dashboard') }}"
+            class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+          >
+            <span class="nav-icon">📊</span>
+            Dashboard
+          </a>
+          <a
+            href="{{ url_for('main.analysis') }}"
+            class="nav-link {% if request.endpoint == 'main.analysis' %}active{% endif %}"
+          >
+            <span class="nav-icon">🔍</span>
+            Analysis
+          </a>
+          <a
+            href="{{ url_for('main.settings') }}"
+            class="nav-link {% if request.endpoint == 'main.settings' %}active{% endif %}"
+          >
+            <span class="nav-icon">⚙️</span>
+            Settings
+          </a>
+        </div>
+
+        <div class="nav-status">
+          <div class="status-indicator" id="systemStatus">
+            <span class="status-dot status-loading"></span>
+            <span class="status-text">Connecting...</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">{% block content %}{% endblock %}</main>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+    <script>
+      // Initialize system status check
+      document.addEventListener("DOMContentLoaded", function () {
+        checkSystemHealth();
+        setInterval(checkSystemHealth, 10000); // Check every 10 seconds
+      });
+
+      async function checkSystemHealth() {
+        try {
+          const health = await API.getSystemHealth();
+          const statusEl = document.getElementById("systemStatus");
+
+          if (health.status === "healthy") {
+            statusEl.innerHTML = `
+                        <span class="status-dot status-online"></span>
+                        <span class="status-text">Online</span>
+                    `;
+          } else {
+            statusEl.innerHTML = `
+                        <span class="status-dot status-offline"></span>
+                        <span class="status-text">Offline</span>
+                    `;
+          }
+        } catch (error) {
+          const statusEl = document.getElementById("systemStatus");
+          statusEl.innerHTML = `
+                    <span class="status-dot status-offline"></span>
+                    <span class="status-text">Error</span>
+                `;
+        }
+      }
+    </script>
+  </body>
+</html>

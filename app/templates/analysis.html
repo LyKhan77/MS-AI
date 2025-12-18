@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis - Metal Sheet QC{% endblock %}
+
+{% block content %}
+<div class="analysis-container">
+    <div class="page-header">
+        <h1 class="page-title">Session Analysis</h1>
+        <p class="page-description">View and analyze past counting sessions</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Session History</h3>
+        </div>
+        
+        <div class="card-body">
+            <div id="sessionsTable">
+                <div class="loading-placeholder">
+                    <span class="loader"></span>
+                    <p>Loading sessions...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.analysis-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.page-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+.page-description {
+    color: var(--text-secondary);
+    font-size: var(--font-size-lg);
+}
+
+.loading-placeholder {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-secondary);
+}
+
+.sessions-grid {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.session-item {
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    align-items: center;
+    gap: var(--spacing-lg);
+    transition: all var(--transition-base);
+}
+
+.session-item:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary);
+}
+
+.session-name {
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+}
+
+.session-time {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.session-count {
+    font-weight: 600;
+}
+
+.session-alert {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.alert-none {
+    background: var(--success);
+    color: white;
+}
+
+.alert-warning {
+    background: var(--warning);
+    color: white;
+}
+
+.alert-danger {
+    background: var(--danger);
+    color: white;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadSessions();
+});
+
+async function loadSessions() {
+    const container = document.getElementById('sessionsTable');
+    
+    try {
+        const response = await API.listSessions();
+        const sessions = response.sessions || [];
+        
+        if (sessions.length === 0) {
+            container.innerHTML = `
+                <div class="loading-placeholder">
+                    <p>No sessions found</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const grid = document.createElement('div');
+        grid.className = 'sessions-grid';
+        
+        sessions.reverse().forEach(session => {
+            const item = document.createElement('div');
+            item.className = 'session-item';
+            
+            const alertClass = !session.alert_triggered ? 'alert-none' : 
+                              session.alert_type === 'under' ? 'alert-warning' : 'alert-danger';
+            const alertText = !session.alert_triggered ? '✓ OK' :
+                             session.alert_type === 'under' ? '⚠ Under' : '⚠ Over';
+            
+            item.innerHTML = `
+                <div>
+                    <div class="session-name">${session.session_name}</div>
+                    <div class="session-time">${formatTimestamp(session.start_time)}</div>
+                </div>
+                <div class="session-count">${session.current_count} / ${session.max_count_target}</div>
+                <div class="session-status">${session.status}</div>
+                <div><span class="session-alert ${alertClass}">${alertText}</span></div>
+                <div><button class="btn btn-secondary btn-sm" onclick="viewSession('${session.session_id}')">View</button></div>
+            `;
+            
+            grid.appendChild(item);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(grid);
+        
+    } catch (error) {
+        container.innerHTML = `
+            <div class="loading-placeholder">
+                <p style="color: var(--danger);">Failed to load sessions</p>
+            </div>
+        `;
+    }
+}
+
+function viewSession(sessionId) {
+    showToast('Session details coming soon!', 'info');
+}
+</script>
+{% endblock %}

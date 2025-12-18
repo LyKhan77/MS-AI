@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Metal Sheet QC{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Left Panel: Video Feed -->
+    <div class="video-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Live Camera Feed</h2>
+            <div class="panel-actions">
+                <button class="btn btn-secondary btn-sm" id="cameraSettingsBtn">
+                    <span>📷</span> Camera
+                </button>
+            </div>
+        </div>
+        
+        <div class="video-container">
+            <img id="videoFeed" 
+                 src="{{ url_for('video.video_feed') }}" 
+                 alt="Video Feed"
+                 class="video-stream">
+            <div class="video-overlay" id="videoOverlay">
+                <div class="overlay-message">
+                    <span class="loader"></span>
+                    <p>Connecting to camera...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="video-info">
+            <div class="info-item">
+                <span class="info-label">FPS:</span>
+                <span class="info-value" id="cameraFps">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Resolution:</span>
+                <span class="info-value" id="cameraResolution">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Source:</span>
+                <span class="info-value" id="cameraSource">--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Controls & Status -->
+    <div class="control-panel">
+        <!-- Session Control Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Session Control</h3>
+                <div class="session-status" id="sessionStatusBadge">
+                    <span class="status-badge status-inactive">Inactive</span>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Session Form -->
+                <form id="sessionForm" class="session-form">
+                    <div class="form-group">
+                        <label for="sessionName" class="form-label">Session Name</label>
+                        <input type="text" 
+                               id="sessionName" 
+                               class="form-input" 
+                               placeholder="e.g., Batch A001"
+                               required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="maxCount" class="form-label">Target Count</label>
+                        <input type="number" 
+                               id="maxCount" 
+                               class="form-input" 
+                               placeholder="e.g., 50"
+                               min="1"
+                               required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-block" id="startBtn">
+                            <span>▶️</span> Start Session
+                        </button>
+                        <button type="button" class="btn btn-danger btn-block" id="finishBtn" style="display: none;">
+                            <span>⏹️</span> Finish Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Count Display Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Current Count</h3>
+            </div>
+            
+            <div class="card-body">
+                <div class="count-display">
+                    <div class="count-current">
+                        <span class="count-number" id="currentCount">0</span>
+                        <span class="count-label">Current</span>
+                    </div>
+                    <div class="count-separator">/</div>
+                    <div class="count-target">
+                        <span class="count-number" id="targetCount">0</span>
+                        <span class="count-label">Target</span>
+                    </div>
+                </div>
+                
+                <div class="count-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-label">
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+                
+                <div class="count-state">
+                    <span class="state-label">State:</span>
+                    <span class="state-value" id="countingState">IDLE</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Session Statistics</h3>
+            </div>
+            
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="sessionDuration">00:00:00</div>
+                            <div class="stat-label">Duration</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-icon">📸</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalCaptures">0</div>
+                            <div class="stat-label">Captures</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="avgConfidence">0%</div>
+                            <div class="stat-label">Avg Confidence</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="inferenceTime">0ms</div>
+                            <div class="stat-label">Inference</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Box -->
+        <div class="alert alert-info" id="alertBox" style="display: none;">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-content">
+                <div class="alert-title" id="alertTitle">Alert</div>
+                <div class="alert-message" id="alertMessage"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Settings Modal -->
+<div class="modal" id="cameraModal" style="display: none;">
+    <div class="modal-overlay" onclick="closeCameraModal()"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title">Camera Settings</h3>
+            <button class="modal-close" onclick="closeCameraModal()">×</button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">RTSP URL</label>
+                <input type="text" 
+                       id="rtspUrl" 
+                       class="form-input" 
+                       placeholder="rtsp://user:pass@ip:port/stream">
+                <button class="btn btn-primary btn-sm" onclick="updateRTSP()">
+                    Update RTSP
+                </button>
+            </div>
+            
+            <div class="divider">OR</div>
+            
+            <div class="form-group">
+                <label class="form-label">Upload Video File</label>
+                <input type="file" 
+                       id="videoFile" 
+                       accept="video/*"
+                       class="form-input-file">
+                <button class="btn btn-primary btn-sm" onclick="uploadVideo()">
+                    Upload Video
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
