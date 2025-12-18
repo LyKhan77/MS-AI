@@ -1,122 +1,263 @@
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Layout was forced before the page was fully loaded. If stylesheets are not yet loaded this may cause a flash of unstyled content. node.js:409:1
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/start. (Reason: CORS request did not succeed). Status code: (null). 2
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/streams/config. (Reason: CORS request did not succeed). Status code: (null). 2
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Uncaught (in promise)
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:928
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
-Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
-Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
-Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/streams/upload. (Reason: CORS request did not succeed). Status code: (null).
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
-Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
-Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
-Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
-Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/list. (Reason: CORS request did not succeed). Status code: (null).
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:4147
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/settings/. (Reason: CORS request did not succeed). Status code: (null).
-Uncaught (in promise)
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
 
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-y http://192.168.2.122:8020/assets/index-D05Ctv9O.js:105
-Ym http://192.168.2.122:8020/assets/index-D05Ctv9O.js:105
-Bl http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-gn http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-Yp http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-At http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-Tu http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-jt http://192.168.2.122:8020/assets/index-D05Ctv9O.js:38
-Se http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-(Async: VoidFunction)
-Se http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-He http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-zp http://192.168.2.122:8020/assets/index-D05Ctv9O.js:38
-onClick http://192.168.2.122:8020/assets/index-D05Ctv9O.js:105
-md http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-gd http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-vd http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-bs http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-nc http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-ho http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-ps http://192.168.2.122:8020/assets/index-D05Ctv9O.js:40
-\_a http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-ho http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-$i http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-Ad http://192.168.2.122:8020/assets/index-D05Ctv9O.js:37
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 31ms]
+
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 103ms]
+
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
-Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://localhost:8000/api/v1/sessions/status. (Reason: CORS request did not succeed). Status code: (null).
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 6ms]
+
 Failed to fetch status
-Object { message: "Network Error", name: "AxiosError", code: "ERR_NETWORK", config: {…}, request: XMLHttpRequest, event: error, stack: "", … }
-index-D05Ctv9O.js:105:476
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 16ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 11ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 5ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 13ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 5ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 54ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 77ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 89ms]
+
+XHRPOST
+http://192.168.2.122:8020/api/v1/streams/upload
+[HTTP/1.1 413 Request Entity Too Large 843ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 59ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 14ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 19ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 47ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 13ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 9ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 89ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 54ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRPOST
+http://192.168.2.122:8020/api/v1/streams/config
+[HTTP/1.1 502 Bad Gateway 72ms]
+
+Uncaught (in promise)
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:928
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 5ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 15ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 52ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 80ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 118ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 23ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 14ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+y http://192.168.2.122:8020/assets/index-7bPOBIke.js:105
+Ym http://192.168.2.122:8020/assets/index-7bPOBIke.js:105
+Bl http://192.168.2.122:8020/assets/index-7bPOBIke.js:40
+gn http://192.168.2.122:8020/assets/index-7bPOBIke.js:40
+Yp http://192.168.2.122:8020/assets/index-7bPOBIke.js:40
+C http://192.168.2.122:8020/assets/index-7bPOBIke.js:25
+Ke http://192.168.2.122:8020/assets/index-7bPOBIke.js:25
+(Async: EventHandlerNonNull)
+<anonymous> http://192.168.2.122:8020/assets/index-7bPOBIke.js:25
+<anonymous> http://192.168.2.122:8020/assets/index-7bPOBIke.js:25
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 5ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
+XHRGET
+http://192.168.2.122:8020/api/v1/sessions/status
+[HTTP/1.1 502 Bad Gateway 105ms]
+
+Failed to fetch status
+Object { message: "Request failed with status code 502", name: "AxiosError", code: "ERR_BAD_RESPONSE", config: {…}, request: XMLHttpRequest, response: {…}, status: 502, stack: "", … }
+index-7bPOBIke.js:105:476
