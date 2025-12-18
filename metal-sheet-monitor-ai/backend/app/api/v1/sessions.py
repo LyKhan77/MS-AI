@@ -40,6 +40,12 @@ def stop_session():
 
 @router.get("/status")
 def get_session_status():
+    return {
+        "count": counting_service.count,
+        "target": current_session["target"],
+        "active": current_session["active"],
+        "name": current_session["name"]
+    }
 @router.get("/list")
 def list_sessions():
     # Verify path exists
