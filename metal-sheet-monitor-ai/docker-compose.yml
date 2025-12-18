@@ -20,4 +20,10 @@ services:
       - /run/jtop.sock:/run/jtop.sock
     restart: unless-stopped
 
-  # Frontend service will be added here later
+  frontend:
+    build: ./frontend
+    container_name: metal_ai_frontend
+    network_mode: host # Simpler for communicating with backend on host network
+    restart: unless-stopped
+    depends_on:
+      - backend
