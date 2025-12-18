@@ -24,7 +24,7 @@ class CameraManager:
         self.source_path: Union[str, int] = 0 # Default to webcam 0 if nothing specified
         self.cap: Optional[cv2.VideoCapture] = None
         
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.running = False
         self.thread: Optional[threading.Thread] = None
         
