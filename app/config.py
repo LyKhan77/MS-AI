@@ -25,8 +25,8 @@ class Config:
     CAMERA_SOURCE_TYPE = 'rtsp'  # 'rtsp' | 'upload' | 'webcam'
     
     # Model Configuration
-    YOLO_COUNTING_MODEL = WEIGHTS_DIR / 'yolo_counting_nano.pt'
-    YOLO_DEFECT_MODEL = WEIGHTS_DIR / 'yolo_defect_detection.pt'
+    YOLO_COUNTING_MODEL = WEIGHTS_DIR / 'yolo_counting_nano.onnx'
+    YOLO_DEFECT_MODEL = WEIGHTS_DIR / 'yolo_defect_detection.onnx'
     SAM2_MODEL = WEIGHTS_DIR / 'sam2_hiera_tiny.pt'
     
     # Detection Settings
