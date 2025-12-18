@@ -58,39 +58,44 @@ class AIInference:
             # Try to move to device if CUDA
             if self.device == 'cuda' and torch.cuda.is_available():
                 try:
+                    # Test CUDA first with small operation
+                    test_tensor = torch.zeros(1, device='cuda')
+                    del test_tensor
+                    
                     self.model.to('cuda')
                     print("Model moved to CUDA")
                     
                     # Warm up model with dummy input on CUDA
                     print("Warming up model on CUDA...")
                     dummy_input = np.zeros((640, 640, 3), dtype=np.uint8)
-                    _ = self.model(dummy_input, verbose=False)
+                    _ = self.model(dummy_input, verbose=False, device='cuda')
                     print("Model warmup successful on CUDA")
                     
                 except Exception as cuda_err:
-                    print(f"CUDA error during model transfer or warmup: {cuda_err}")
+                    print(f"CUDA error: {cuda_err}")
                     print("Falling back to CPU...")
                     self.device = 'cpu'
-                    # Warmup on CPU
+            
+            # If CPU mode or CUDA failed
+            if self.device == 'cpu':
+                try:
+                    print("Running on CPU mode")
+                    # Warmup on CPU with explicit device parameter
                     print("Warming up model on CPU...")
                     dummy_input = np.zeros((640, 640, 3), dtype=np.uint8)
-                    _ = self.model(dummy_input, verbose=False)
+                    _ = self.model(dummy_input, verbose=False, device='cpu')
                     print("Model warmup successful on CPU")
-            else:
-                # CPU mode
-                self.device = 'cpu'
-                print("Model running on CPU")
-                # Warmup on CPU
-                print("Warming up model on CPU...")
-                dummy_input = np.zeros((640, 640, 3), dtype=np.uint8)
-                _ = self.model(dummy_input, verbose=False)
-                print("Model warmup successful on CPU")
+                except Exception as cpu_err:
+                    print(f"CPU warmup error: {cpu_err}")
+                    print("Warning: Model may have limited functionality")
             
             self.is_loaded = True
+            print(f"✓ Model ready on {self.device.upper()}")
             return True
             
         except Exception as e:
             print(f"Error loading model: {e}")
+            print("System will continue without AI detection")
             self.is_loaded = False
             return False
     

@@ -4,9 +4,12 @@
 
 .dashboard-container {
     display: grid;
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: minmax(800px, 1fr) 450px;  /* Wider right panel, bigger video */
     gap: var(--spacing-xl);
     height: calc(100vh - 110px);
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
 }
 
 /* ============================================
@@ -120,7 +123,9 @@
     flex-direction: column;
     gap: var(--spacing-lg);
     overflow-y: auto;
-    padding-right: var(--spacing-sm);
+    overflow-x: hidden;
+    padding-right: var(--spacing-xs);
+    max-height: calc(100vh - 110px);
 }
 
 .control-panel::-webkit-scrollbar {
@@ -136,6 +141,32 @@
     background: var(--primary);
     border-radius: 3px;
 }
+
+.control-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-light);
+}
+
+/* Ensure cards have consistent structure */
+.control-panel > .card {
+    flex-shrink: 0;  /* Prevent cards from shrinking */
+}
+
+/* Session Control Card - Compact height */
+.control-panel > .card:nth-child(1) .card-body {
+    padding: var(--spacing-md);
+}
+
+/* Count Display Card - Fixed height for stability */
+.control-panel > .card:nth-child(2) {
+    min-height: 280px;
+}
+
+/* Statistics Card - Grid layout */
+.control-panel > .card:nth-child(3) {
+    min-height: 200px;
+}
+
+/* Alert Box styles moved below */
 
 /* Session Status Badge */
 .session-status {
@@ -171,11 +202,27 @@
     gap: var(--spacing-md);
 }
 
+.session-form .form-group {
+    margin-bottom: 0;  /* Remove extra margin since gap handles spacing */
+}
+
+.session-form .form-input {
+    height: 42px;  /* Consistent input height */
+    font-size: var(--font-size-base);
+}
+
 .form-actions {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
-    margin-top: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.form-actions .btn {
+    padding: var(--spacing-md);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    min-height: 48px;  /* Larger clickable area */
 }
 
 /* Count Display */
@@ -183,8 +230,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-xl);
     padding: var(--spacing-xl) 0;
+    margin-bottom: var(--spacing-md);
 }
 
 .count-current,
@@ -192,29 +240,33 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
 }
 
 .count-number {
-    font-size: 3rem;
+    font-size: 3.5rem;  /* Larger for better visibility */
     font-weight: 700;
+    line-height: 1;
     background: linear-gradient(135deg, var(--primary-light), var(--primary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 2px 10px rgba(0, 52, 115, 0.3);
 }
 
 .count-label {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+    font-weight: 600;
 }
 
 .count-separator {
-    font-size: 2rem;
+    font-size: 2.5rem;
     color: var(--text-muted);
-    font-weight: 300;
+    font-weight: 200;
+    margin: 0 var(--spacing-sm);
 }
 
 /* Progress Bar */
@@ -286,20 +338,26 @@
 .stat-item:hover {
     background: var(--bg-secondary);
     border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 52, 115, 0.2);
 }
 
 .stat-icon {
     font-size: 2rem;
+    flex-shrink: 0;
 }
 
 .stat-content {
     flex: 1;
+    min-width: 0;  /* Allow text truncation */
 }
 
 .stat-value {
     font-size: var(--font-size-xl);
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-xs);
 }
 
 .stat-label {
@@ -307,6 +365,7 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    font-weight: 500;
 }
 
 /* Alert Box */

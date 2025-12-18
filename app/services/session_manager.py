@@ -282,7 +282,7 @@ class SessionManager:
             frame,
             count_text,
             (20, 55),
-            cv2.FONT_HERSHEY_BOLD,
+            cv2.FONT_HERSHEY_DUPLEX,  # cv2.FONT_HERSHEY_BOLD doesn't exist
             1.8,
             (115, 52, 0),  # Primary color
             3
