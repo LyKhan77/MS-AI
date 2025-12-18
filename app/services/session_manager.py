@@ -26,20 +26,20 @@ class SessionManager:
         self.config = config
         
         # Initialize services
-        self.camera = CameraManager(rtsp_url=config.RTSP_URL)
+        self.camera = CameraManager(rtsp_url=config.get('RTSP_URL'))
         self.ai = AIInference(
-            model_path=str(config.YOLO_COUNTING_MODEL),
-            device='cuda' if config.USE_GPU else 'cpu',
-            conf_threshold=config.DETECTION_CONFIDENCE_THRESHOLD
+            model_path=str(config.get('YOLO_COUNTING_MODEL')),
+            device='cuda' if config.get('USE_GPU') else 'cpu',
+            conf_threshold=config.get('DETECTION_CONFIDENCE_THRESHOLD')
         )
         self.counting = CountingLogic(
             motion_threshold=25.0,
             stability_frames=5,
-            min_detection_confidence=config.DETECTION_CONFIDENCE_THRESHOLD
+            min_detection_confidence=config.get('DETECTION_CONFIDENCE_THRESHOLD')
         )
         self.storage = StorageManager(
-            captures_dir=config.CAPTURES_DIR,
-            sessions_index_file=config.SESSIONS_INDEX_FILE
+            captures_dir=config.get('CAPTURES_DIR'),
+            sessions_index_file=config.get('SESSIONS_INDEX_FILE')
         )
         
         # Session state
@@ -83,8 +83,8 @@ class SessionManager:
                 'url': self.camera.rtsp_url or self.camera.video_file
             },
             'detection_settings': {
-                'confidence_threshold': self.config.DETECTION_CONFIDENCE_THRESHOLD,
-                'model_name': self.config.YOLO_COUNTING_MODEL.name,
+                'confidence_threshold': self.config.get('DETECTION_CONFIDENCE_THRESHOLD'),
+                'model_name': self.config.get('YOLO_COUNTING_MODEL').name,
                 'model_version': 'v1.0'
             },
             'statistics': {
@@ -110,7 +110,7 @@ class SessionManager:
             'current_count': 0,
             'max_count_target': max_count_target,
             'alert_triggered': False,
-            'folder_path': str(self.config.CAPTURES_DIR / session_id)
+            'folder_path': str(self.config.get('CAPTURES_DIR') / session_id)
         })
         
         # Reset counting logic
@@ -226,7 +226,7 @@ class SessionManager:
         
         # Save image
         filename = f"img_{capture_id:03d}.jpg"
-        session_folder = self.config.CAPTURES_DIR / session_id
+        session_folder = self.config.get('CAPTURES_DIR') / session_id
         filepath = session_folder / filename
         
         cv2.imwrite(str(filepath), count_event['frame'])
