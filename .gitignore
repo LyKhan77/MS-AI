@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Flask
+instance/
+.env
+
+# Model weights (large files)
+weights/*.pt
+weights/*.pth
+weights/*.onnx
+
+# Captured images (generated)
+app/static/captures/*/
+!app/static/captures/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SAM2 repository (cloned during setup)
+segment-anything-2/
+
+# Test outputs
+test_frame_*.jpg
+test_*.png
+
+# Temporary files
+*.tmp
+*.bak
