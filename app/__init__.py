@@ -6,6 +6,10 @@ Metal Sheet QC Detection System
 from flask import Flask
 from pathlib import Path
 import os
+import atexit
+
+# Global session manager instance
+session_manager_instance = None
 
 def create_app(config_name='default'):
     """
@@ -27,17 +31,20 @@ def create_app(config_name='default'):
     # Ensure required directories exist
     ensure_directories(app)
     
+    # Initialize session manager
+    init_session_manager(app)
+    
     # Register blueprints (routes)
     register_blueprints(app)
-    
-    # Initialize extensions if needed
-    # (Currently no extensions needed - no database)
     
     # Register error handlers
     register_error_handlers(app)
     
-    # Context processors for templates
+    # Register context processors for templates
     register_context_processors(app)
+    
+    # Register shutdown handler
+    register_shutdown_handler(app)
     
     return app
 
@@ -50,6 +57,7 @@ def ensure_directories(app):
         app.config['STATIC_DIR'] / 'css',
         app.config['STATIC_DIR'] / 'js',
         app.config['STATIC_DIR'] / 'audio',
+        app.config['STATIC_DIR'] / 'uploads',
     ]
     
     for directory in directories:
@@ -67,6 +75,34 @@ def ensure_directories(app):
             json.dump(initial_data, f, indent=2)
 
 
+def init_session_manager(app):
+    """Initialize session manager and services"""
+    global session_manager_instance
+    
+    from app.services.session_manager import SessionManager
+    
+    print("\n" + "="*60)
+    print("Initializing SessionManager...")
+    print("="*60)
+    
+    # Create session manager
+    session_manager_instance = SessionManager(app.config)
+    
+    # Initialize services (camera, AI model)
+    success = session_manager_instance.initialize_services()
+    
+    if not success:
+        print("⚠️  Warning: Some services failed to initialize")
+        print("   System will continue but functionality may be limited")
+    else:
+        print("✓ All services initialized successfully")
+    
+    print("="*60 + "\n")
+    
+    # Store in app context for access in routes
+    app.session_manager = session_manager_instance
+
+
 def register_blueprints(app):
     """Register Flask blueprints for routes"""
     from app.routes import main_routes, api_routes, video_routes
@@ -76,9 +112,11 @@ def register_blueprints(app):
     
     # API endpoints (JSON)
     app.register_blueprint(api_routes.bp, url_prefix='/api')
+    api_routes.set_session_manager(session_manager_instance)
     
     # Video streaming
     app.register_blueprint(video_routes.bp)
+    video_routes.set_session_manager(session_manager_instance)
 
 
 def register_error_handlers(app):
@@ -111,3 +149,15 @@ def register_context_processors(app):
             'PRIMARY_COLOR': app.config['PRIMARY_COLOR'],
             'THEME': app.config['THEME'],
         }
+
+
+def register_shutdown_handler(app):
+    """Register app shutdown handler"""
+    
+    def shutdown():
+        """Cleanup on app shutdown"""
+        global session_manager_instance
+        if session_manager_instance:
+            session_manager_instance.shutdown()
+    
+    atexit.register(shutdown)
