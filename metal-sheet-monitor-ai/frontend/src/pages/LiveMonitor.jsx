@@ -68,7 +68,7 @@ const LiveMonitor = () => {
         {/* Left Column: Video Feed */}
         <div className="lg:col-span-2 bg-black rounded-lg overflow-hidden border border-gray-700 shadow-xl relative aspect-video">
           <img 
-            src="http://localhost:8000/api/v1/streams/video_feed" 
+            src="/api/v1/streams/video_feed" 
             alt="Live Stream" 
             className="w-full h-full object-contain"
           />

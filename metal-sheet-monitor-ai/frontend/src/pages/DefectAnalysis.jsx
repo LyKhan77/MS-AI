@@ -50,7 +50,7 @@ const DefectAnalysis = () => {
 
     const getImageUrl = (path) => {
         // Convert server path "data/media/..." to url "/media/..."
-        return "http://localhost:8000/media/" + path.replace("data/media/", "");
+        return "/media/" + path.replace("data/media/", "");
     };
 
     return (
