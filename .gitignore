@@ -49,3 +49,5 @@ test_*.png
 # Temporary files
 *.tmp
 *.bak
+
+*.md

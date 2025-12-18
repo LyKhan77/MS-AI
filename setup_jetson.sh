@@ -111,6 +111,14 @@ fi
 print_status "Installing Python dependencies from requirements.txt..."
 pip install -r requirements.txt
 
+# Install Ultralytics separately with --no-deps to avoid reinstalling PyTorch
+print_status "Installing Ultralytics (YOLO) without dependencies..."
+pip install ultralytics>=8.1.0 --no-deps
+
+# Install Ultralytics dependencies manually (except torch/torchvision)
+print_status "Installing Ultralytics required dependencies..."
+pip install ultralytics
+
 # Install SAM2 from source
 print_status "Installing SAM2 (Segment Anything Model 2)..."
 if [ -d "segment-anything-2" ]; then

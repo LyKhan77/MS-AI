@@ -17,10 +17,10 @@ numpy>=1.24.0,<2.0.0
 
 # ============================================
 # YOLO (Ultralytics)
-# IMPORTANT: Install without torch dependencies
-# PyTorch will be installed separately for Jetson
+# NOTE: Ultralytics will be installed separately
+# to avoid reinstalling PyTorch
 # ============================================
-ultralytics>=8.1.0 --no-deps
+# ultralytics>=8.1.0  # Commented out - install manually with --no-deps
 
 # ============================================
 # SAM2 Dependencies
