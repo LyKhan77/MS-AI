@@ -29,6 +29,9 @@ def generate_frames():
         yield b''
         return
     
+    # Cache config values before entering generator (avoid Flask context issues)
+    jpeg_quality = session_manager.config.get('MJPEG_QUALITY', 85)
+    
     camera = session_manager.camera
     
     while True:
@@ -60,8 +63,8 @@ def generate_frames():
                 2
             )
         
-        # Encode frame as JPEG
-        ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, current_app.config.get('MJPEG_QUALITY', 85)])
+        # Encode frame as JPEG (use cached quality value)
+        ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality])
         
         if not ret:
             continue

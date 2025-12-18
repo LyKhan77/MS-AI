@@ -53,23 +53,45 @@ class AIInference:
         try:
             print(f"Loading model from: {self.model_path}")
             self.model = YOLO(str(self.model_path))
+            print("Model loaded successfully")
             
-            # Move to device
+            # Try to move to device if CUDA
             if self.device == 'cuda' and torch.cuda.is_available():
-                self.model.to('cuda')
-                print("Model moved to CUDA")
-            
-            # Warmup
-            print("Warming up model...")
-            dummy_input = np.zeros((640, 640, 3), dtype=np.uint8)
-            _ = self.model(dummy_input, verbose=False)
+                try:
+                    self.model.to('cuda')
+                    print("Model moved to CUDA")
+                    
+                    # Warm up model with dummy input on CUDA
+                    print("Warming up model on CUDA...")
+                    dummy_input = np.zeros((640, 640, 3), dtype=np.uint8)
+                    _ = self.model(dummy_input, verbose=False)
+                    print("Model warmup successful on CUDA")
+                    
+                except Exception as cuda_err:
+                    print(f"CUDA error during model transfer or warmup: {cuda_err}")
+                    print("Falling back to CPU...")
+                    self.device = 'cpu'
+                    # Warmup on CPU
+                    print("Warming up model on CPU...")
+                    dummy_input = np.zeros((640, 640, 3), dtype=np.uint8)
+                    _ = self.model(dummy_input, verbose=False)
+                    print("Model warmup successful on CPU")
+            else:
+                # CPU mode
+                self.device = 'cpu'
+                print("Model running on CPU")
+                # Warmup on CPU
+                print("Warming up model on CPU...")
+                dummy_input = np.zeros((640, 640, 3), dtype=np.uint8)
+                _ = self.model(dummy_input, verbose=False)
+                print("Model warmup successful on CPU")
             
             self.is_loaded = True
-            print("Model loaded successfully")
             return True
             
         except Exception as e:
             print(f"Error loading model: {e}")
+            self.is_loaded = False
             return False
     
     def unload_model(self):
