@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import cv2
 import os
+import time
 from config import Config
 
 class MetalSheetCounter:
