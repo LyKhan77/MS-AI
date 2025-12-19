@@ -32,6 +32,14 @@ def generate_frames():
     """
     Background thread function to capture frames, run, and emit to SocketIO
     """
+    # Only start camera if source is set
+    if camera.source is None:
+        print("No camera source set. Waiting for source configuration...")
+        while camera.source is None and not stop_streaming.is_set():
+            socketio.sleep(1)
+        if stop_streaming.is_set():
+            return
+    
     camera.start()
     while not stop_streaming.is_set():
         ret, frame = camera.get_frame()

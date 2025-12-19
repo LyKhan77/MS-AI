@@ -14,10 +14,10 @@ function App() {
       <div className="flex h-screen w-full bg-[#0f172a] overflow-hidden font-sans">
         {/* Sidebar */}
         <aside 
-          className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-[#001e45] text-white flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out`}
+          className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-[#001e45] text-white flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative`}
         >
           {/* Header & Logo */}
-          <div className="p-4 border-b border-white/5 flex items-center justify-between">
+          <div className="p-4 border-b border-white/5 flex items-center justify-center">
             <div className={`font-bold tracking-tight text-white flex items-center gap-2 overflow-hidden whitespace-nowrap`}>
               <div className="bg-blue-600 w-10 h-10 rounded flex items-center justify-center font-black text-xs shrink-0 shadow-lg shadow-blue-500/30">
                 MSQC
@@ -26,18 +26,6 @@ function App() {
                 <span className="text-lg">Detector<span className="text-blue-400">.ai</span></span>
               </div>
             </div>
-            
-            {/* Collapse Toggle (Moved here) */}
-             <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-1.5 rounded-md hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-            >
-              {isSidebarOpen ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 12 18 18"/></svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 6 12 6-12 6"/></svg>
-              )}
-            </button>
           </div>
           
           {/* Nav Links */}
@@ -67,6 +55,19 @@ function App() {
               </div>
           </div>
         </aside>
+
+        {/* Floating Toggle Button */}
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className={`fixed top-4 ${isSidebarOpen ? 'left-60' : 'left-16'} z-50 p-2 rounded-md bg-[#003473] hover:bg-[#004a99] text-white shadow-lg transition-all duration-300`}
+          title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+        >
+          {isSidebarOpen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          )}
+        </button>
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto bg-[#0f172a]">

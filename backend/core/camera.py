@@ -8,7 +8,7 @@ class Camera:
         self.cap = None
         self.is_running = False
         self.lock = threading.Lock()
-        self.source = Config.RTSP_URL
+        self.source = None  # Don't set default source yet
 
     def set_source(self, source):
         """
