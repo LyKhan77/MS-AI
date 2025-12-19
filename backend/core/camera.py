@@ -16,10 +16,13 @@ class Camera:
         """
         with self.lock:
             self.stop()
+            # Expand ~ to home directory for file paths
+            if isinstance(source, str):
+                source = os.path.expanduser(source)
+                # If source is a digit string, convert to int for webcam
+                if source.isdigit():
+                    source = int(source)
             self.source = source
-            # If source is a digit string, convert to int for webcam
-            if isinstance(source, str) and source.isdigit():
-                self.source = int(source)
             self.start()
 
     def start(self):

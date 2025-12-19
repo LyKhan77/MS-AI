@@ -100,10 +100,10 @@ def set_source():
     return jsonify({"error": "No source provided"}), 400
 
 @socketio.on('connect')
-def handle_connect():
+def handle_connect(auth=None):
     print('Client connected')
     global streaming_thread
-    if streaming_thread is None or not streaming_thread.is_alive():
+    if streaming_thread is None:
         stop_streaming.clear()
         streaming_thread = socketio.start_background_task(generate_frames)
 
