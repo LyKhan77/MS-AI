@@ -15,7 +15,7 @@ class Config:
     FRAME_RATE = 30
     
     # Model Settings
-    YOLO_MODEL_PATH = os.path.join(BASE_DIR, 'yolov8n.pt') # Custom trained model
+    YOLO_MODEL_PATH = os.path.join(BASE_DIR, 'yolo11m_metalsheet.pt')  # Trained YOLOv11m
     SAM_CHECKPOINT = "sam3_vit_h.pth" # Placeholder path
     
     # Analysis
