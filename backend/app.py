@@ -90,6 +90,27 @@ def stop_session_route():
 def get_sessions():
     return jsonify(db.get_all_sessions())
 
+@app.route('/api/upload', methods=['POST'])
+def upload_video():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Empty filename"}), 400
+    
+    # Save to backend/data/videos/
+    videos_dir = os.path.join(Config.DATA_DIR, 'videos')
+    os.makedirs(videos_dir, exist_ok=True)
+    
+    filepath = os.path.join(videos_dir, file.filename)
+    file.save(filepath)
+    
+    # Auto-set as source
+    camera.set_source(filepath)
+    
+    return jsonify({"status": "uploaded", "path": filepath})
+
 @app.route('/api/source', methods=['POST'])
 def set_source():
     data = request.json
