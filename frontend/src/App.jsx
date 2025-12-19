@@ -36,7 +36,7 @@ function App() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+        <main className="flex-1 overflow-auto bg-[#0f172a]">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/defects" element={<Defects />} />
