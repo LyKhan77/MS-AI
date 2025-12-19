@@ -18,7 +18,7 @@ function App() {
         >
           {/* Header & Logo */}
           <div className="p-4 border-b border-white/5 flex items-center justify-between">
-            <div className={`font-bold tracking-tight text-white flex items-center gap-2 overflow-hidden whitespace-nowrap ${!isSidebarOpen && 'justify-center w-full'}`}>
+            <div className={`font-bold tracking-tight text-white flex items-center gap-2 overflow-hidden whitespace-nowrap`}>
               <div className="bg-blue-600 w-10 h-10 rounded flex items-center justify-center font-black text-xs shrink-0 shadow-lg shadow-blue-500/30">
                 MSQC
               </div>
@@ -26,38 +26,45 @@ function App() {
                 <span className="text-lg">Detector<span className="text-blue-400">.ai</span></span>
               </div>
             </div>
+            
+            {/* Collapse Toggle (Moved here) */}
+             <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-1.5 rounded-md hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+            >
+              {isSidebarOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 12 18 18"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 6 12 6-12 6"/></svg>
+              )}
+            </button>
           </div>
           
           {/* Nav Links */}
           <nav className="flex-1 p-3 flex flex-col gap-2 overflow-hidden">
             <Link to="/" className={`flex items-center gap-3 px-3 py-3 rounded-lg bg-[#003473] text-white shadow-lg shadow-blue-900/20 ${!isSidebarOpen && 'justify-center'}`} title="Dashboard">
-              <span className="w-5 h-5 bg-white/20 rounded-sm shrink-0"></span> {/* Icon placeholder */}
+              {/* Dashboard Icon */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
               {isSidebarOpen && <span className="font-medium">Dashboard</span>}
             </Link>
             <Link to="/defects" className={`flex items-center gap-3 px-3 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Defect Analysis">
-              <span className="w-5 h-5 border border-gray-600 rounded-sm shrink-0"></span>
+              {/* Defects Icon (Microscope/Search) */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               {isSidebarOpen && <span className="font-medium">Defects</span>}
             </Link>
             <Link to="/dimensions" className={`flex items-center gap-3 px-3 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Dimensions">
-              <span className="w-5 h-5 border border-gray-600 rounded-sm shrink-0"></span>
+              {/* Dimensions Icon (Ruler) */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>
               {isSidebarOpen && <span className="font-medium">Dimensions</span>}
             </Link>
           </nav>
 
-          {/* Setup / Collapse Toggle */}
-          <div className="p-4 border-t border-white/5 flex flex-col items-center gap-4">
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors w-full flex justify-center"
-            >
-              {isSidebarOpen ? '<< Collapse' : '>>'}
-            </button>
-            {isSidebarOpen && (
-              <div className="text-xs text-gray-500 text-center">
+          {/* Footer Info */}
+          <div className={`p-4 border-t border-white/5 flex flex-col items-center gap-2 ${!isSidebarOpen && 'hidden'}`}>
+             <div className="text-xs text-gray-500 text-center">
                 v2.0.0-beta<br/>
                 RTX 4090
               </div>
-            )}
           </div>
         </aside>
 
