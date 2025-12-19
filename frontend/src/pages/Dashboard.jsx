@@ -272,8 +272,9 @@ const Dashboard = () => {
                   <div className="flex items-center gap-3 p-3 bg-black/20 rounded border border-white/5">
                     <button 
                       onClick={handlePlayPause}
-                      className="p-2 rounded bg-primary hover:bg-secondary transition-colors"
-                      title={playbackState.isPaused ? "Resume" : "Pause"}
+                      disabled={isSessionActive}
+                      className={`p-2 rounded transition-colors ${isSessionActive ? 'bg-gray-700 cursor-not-allowed opacity-50' : 'bg-primary hover:bg-secondary'}`}
+                      title={isSessionActive ? "Disabled during session" : (playbackState.isPaused ? "Resume" : "Pause")}
                     >
                       {playbackState.isPaused ? (
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -289,7 +290,8 @@ const Dashboard = () => {
                         max={playbackState.totalFrames || 100}
                         value={playbackState.currentFrame}
                         onChange={handleSeek}
-                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                        disabled={isSessionActive}
+                        className={`flex-1 h-1 bg-gray-700 rounded-lg appearance-none accent-primary ${isSessionActive ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                       />
                       <span className="text-xs text-gray-400 min-w-[80px]">
                         {playbackState.currentFrame} / {playbackState.totalFrames}

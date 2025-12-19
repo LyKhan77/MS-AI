@@ -30,7 +30,7 @@ stop_streaming = threading.Event()
 
 def generate_frames():
     """
-    Background thread function to capture frames, run, and emit to SocketIO
+    Background thread function to capture frames, run detection only if session active
     """
     # Only start camera if source is set
     if camera.source is None:
@@ -41,27 +41,49 @@ def generate_frames():
             return
     
     camera.start()
+    consecutive_failures = 0
+    max_failures = 10
+    
     while not stop_streaming.is_set():
         ret, frame = camera.get_frame()
+        
         if not ret:
-            time.sleep(0.1)
+            consecutive_failures += 1
+            if consecutive_failures >= max_failures:
+                print("Too many frame failures, stopping stream")
+                break
+            socketio.sleep(0.1)
             continue
+        
+        consecutive_failures = 0
 
-        # Run YOLO Detector
-        count, debug_frame = detector.process(frame)
+        # Check if session is active
+        active_session = db.get_active_session()
+        
+        if active_session:
+            # Run detection only when session is active
+            count, debug_frame = detector.process(frame)
+            final_frame = debug_frame if debug_frame is not None else frame
+        else:
+            # No detection, just raw frame
+            final_frame = frame
+            count = 0
         
         # Prepare frame for streaming (JPEG -> Base64)
-        # Use debug_frame (with bounding boxes) if available
-        final_frame = debug_frame if debug_frame is not None else frame
         _, buffer = cv2.imencode('.jpg', final_frame)
         frame_bytes = base64.b64encode(buffer).decode('utf-8')
         
         # Emit to client
-        socketio.emit('video_frame', {'image': frame_bytes, 'count': detector.get_count()})
+        socketio.emit('video_frame', {
+            'image': frame_bytes, 
+            'count': count,
+            'session_active': active_session is not None
+        })
         
         socketio.sleep(1 / Config.FRAME_RATE) 
     
     camera.stop()
+    print("Streaming thread exited cleanly")
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
@@ -72,6 +94,11 @@ def start_session():
     data = request.json
     name = data.get('name', 'Untitled')
     max_count = data.get('max_count', 100)
+    
+    # Check if stream is running
+    if camera.source is None:
+        return jsonify({"error": "No video source set. Please connect RTSP or upload video first."}), 400
+    
     session = db.create_session(name, max_count)
     
     # Configure Detector for this session
@@ -79,11 +106,17 @@ def start_session():
     captures_dir = os.path.join(session_dir, 'captures')
     detector.set_session(session['id'], captures_dir)
     
+    print(f"Session started: {session['id']}")
     return jsonify(session)
 
 @app.route('/api/session/stop', methods=['POST'])
 def stop_session_route():
     result = db.stop_session()
+    
+    # Reset detector
+    detector.set_session(None, None)
+    
+    print("Session stopped")
     return jsonify(result)
 
 @app.route('/api/sessions', methods=['GET'])
@@ -92,12 +125,24 @@ def get_sessions():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_video():
+    global streaming_thread
+    
     if 'file' not in request.files:
         return jsonify({"error": "No file provided"}), 400
     
     file = request.files['file']
     if file.filename == '':
         return jsonify({"error": "Empty filename"}), 400
+    
+    # Stop existing stream if running
+    if streaming_thread:
+        print("Stopping existing stream before upload...")
+        stop_streaming.set()
+        time.sleep(0.5)
+        streaming_thread = None
+    
+    # Reset event for new stream
+    stop_streaming.clear()
     
     # Save to backend/data/videos/
     videos_dir = os.path.join(Config.DATA_DIR, 'videos')
@@ -106,7 +151,7 @@ def upload_video():
     filepath = os.path.join(videos_dir, file.filename)
     file.save(filepath)
     
-    # Auto-set as source
+    # Auto-set as source (stream will start via SocketIO)
     camera.set_source(filepath)
     
     return jsonify({"status": "uploaded", "path": filepath})
@@ -117,7 +162,7 @@ def set_source():
     source = data.get('source')
     if source:
         camera.set_source(source)
-        return jsonify({"status": "source_updated", "source": source})
+        return jsonify({"status": "source updated", "source": source})
     return jsonify({"error": "No source provided"}), 400
 
 @app.route('/api/playback/pause', methods=['POST'])
@@ -143,7 +188,25 @@ def playback_info():
 
 @app.route('/api/camera/stop', methods=['POST'])
 def stop_camera():
+    global streaming_thread
+    
+    print("Stopping camera and streaming thread...")
+    
+    # Signal thread to stop
+    stop_streaming.set()
+    
+    # Stop camera
     camera.stop()
+    
+    # Wait for thread to finish
+    if streaming_thread:
+        time.sleep(0.5)  # Give thread time to exit
+        streaming_thread = None
+    
+    # Clear source
+    camera.source = None
+    
+    print("Camera stopped successfully")
     return jsonify({"status": "stopped"})
 
 @socketio.on('connect')

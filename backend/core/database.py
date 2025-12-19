@@ -1,6 +1,6 @@
-import json
 import os
-import time
+import json
+from datetime import datetime
 from config import Config
 
 class Database:
@@ -10,9 +10,12 @@ class Database:
         self._ensure_db()
 
     def _ensure_db(self):
+        # Ensure the directory for db.json exists
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir: # Only create if db_path includes a directory
+            os.makedirs(db_dir, exist_ok=True)
+            
         if not os.path.exists(self.db_path):
-            # Create parent directory if it doesn't exist
-            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
             self._save_db({"sessions": [], "active_session_id": None})
 
     def _load_db(self):
@@ -20,58 +23,50 @@ class Database:
             return json.load(f)
 
     def _save_db(self, data):
+        # Ensure directory exists before saving
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         with open(self.db_path, 'w') as f:
-            json.dump(data, f, indent=4)
+            json.dump(data, f, indent=2)
 
     def create_session(self, name, max_count):
         db = self._load_db()
-        session_id = str(int(time.time()))
-        
-        session_folder = os.path.join(self.sessions_dir, session_id)
-        os.makedirs(session_folder, exist_ok=True)
-        
-        # Create 'captures' and 'defects' subfolders
-        os.makedirs(os.path.join(session_folder, 'captures'), exist_ok=True)
-        os.makedirs(os.path.join(session_folder, 'defects'), exist_ok=True)
-
-        new_session = {
+        session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        session = {
             "id": session_id,
             "name": name,
             "max_count": max_count,
-            "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "status": "active",
             "total_count": 0,
-            "calibration_factor": Config.PIXEL_TO_MM_DEFAULT
+            "start_time": datetime.now().isoformat(),
+            "end_time": None,
+            "status": "active"
         }
-        
-        db["sessions"].append(new_session)
+        db["sessions"].append(session)
         db["active_session_id"] = session_id
         self._save_db(db)
-        return new_session
-
-    def get_active_session(self):
-        db = self._load_db()
-        active_id = db.get("active_session_id")
-        if not active_id:
-            return None
-        for s in db["sessions"]:
-            if s["id"] == active_id:
-                return s
-        return None
+        
+        # Create session directory
+        session_dir = os.path.join(self.sessions_dir, session_id)
+        os.makedirs(session_dir, exist_ok=True)
+        os.makedirs(os.path.join(session_dir, 'captures'), exist_ok=True)
+        
+        return session
 
     def stop_session(self):
         db = self._load_db()
-        active_id = db.get("active_session_id")
-        if active_id:
-            for s in db["sessions"]:
-                if s["id"] == active_id:
-                    s["status"] = "completed"
+        if db['active_session_id']:
+            # Find and update session
+            for session in db['sessions']:
+                if session['id'] == db['active_session_id']:
+                    session['end_time'] = datetime.now().isoformat()
+                    session['status'] = 'completed'
                     break
-        db["active_session_id"] = None
-        self._save_db(db)
-        return {"status": "stopped"}
+            
+            db['active_session_id'] = None
+            self._save_db(db)
+            return {"status": "session_stopped"}
+        return {"status": "no_active_session"}
 
-    def update_count(self, session_id, count):
+    def update_session_count(self, session_id, count):
         db = self._load_db()
         for s in db["sessions"]:
             if s["id"] == session_id:
@@ -88,4 +83,13 @@ class Database:
         for s in db["sessions"]:
             if s["id"] == session_id:
                 return s
+        return None
+    
+    def get_active_session(self):
+        """Get currently active session"""
+        db = self._load_db()
+        if db['active_session_id']:
+            for session in db['sessions']:
+                if session['id'] == db['active_session_id']:
+                    return session
         return None
