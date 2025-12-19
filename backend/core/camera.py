@@ -1,6 +1,7 @@
 import cv2
 import time
 import threading
+import os
 from config import Config
 
 class Camera:
