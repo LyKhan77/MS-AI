@@ -9,6 +9,33 @@ const Dashboard = () => {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [currentCount, setCurrentCount] = useState(0);
   const [sourceInput, setSourceInput] = useState({ mode: 'rtsp', value: '' });
+  const [playbackState, setPlaybackState] = useState({
+    isPaused: false,
+    currentFrame: 0,
+    totalFrames: 0,
+    fps: 0
+  });
+
+  // Poll playback info when in video mode
+  React.useEffect(() => {
+    if (sourceInput.mode === 'upload') {
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch('/api/playback/info');
+          const data = await response.json();
+          setPlaybackState({
+            isPaused: data.is_paused,
+            currentFrame: data.current_frame,
+            totalFrames: data.total_frames,
+            fps: data.fps
+          });
+        } catch (err) {
+          console.error('Failed to fetch playback info:', err);
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [sourceInput.mode]);
 
   const handleStart = async () => {
     try {
@@ -61,6 +88,28 @@ const Dashboard = () => {
     } catch (err) {
       console.error(err);
       alert('Upload error');
+    }
+  };
+
+  const handlePlayPause = async () => {
+    try {
+      const endpoint = playbackState.isPaused ? '/api/playback/resume' : '/api/playback/pause';
+      await fetch(endpoint, { method: 'POST' });
+    } catch (err) {
+      console.error('Playback control error:', err);
+    }
+  };
+
+  const handleSeek = async (e) => {
+    const frame = parseInt(e.target.value);
+    try {
+      await fetch('/api/playback/seek', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frame })
+      });
+    } catch (err) {
+      console.error('Seek error:', err);
     }
   };
 
@@ -131,13 +180,44 @@ const Dashboard = () => {
                 </button>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <input 
-                  type="file" 
-                  accept="video/*"
-                  onChange={handleFileUpload}
-                  className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-secondary file:cursor-pointer"
-                />
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input 
+                    type="file" 
+                    accept="video/*"
+                    onChange={handleFileUpload}
+                    className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-secondary file:cursor-pointer"
+                  />
+                </div>
+                
+                {/* Playback Controls */}
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded border border-white/5">
+                  <button 
+                    onClick={handlePlayPause}
+                    className="p-2 rounded bg-primary hover:bg-secondary transition-colors"
+                    title={playbackState.isPaused ? "Resume" : "Pause"}
+                  >
+                    {playbackState.isPaused ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                    )}
+                  </button>
+                  
+                  <div className="flex-1 flex items-center gap-2">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max={playbackState.totalFrames || 100}
+                      value={playbackState.currentFrame}
+                      onChange={handleSeek}
+                      className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <span className="text-xs text-gray-400 min-w-[80px]">
+                      {playbackState.currentFrame} / {playbackState.totalFrames}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
