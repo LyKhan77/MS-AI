@@ -102,6 +102,7 @@ def start_session():
     data = request.json
     name = data.get('name', 'Untitled')
     max_count = data.get('max_count', 100)
+    confidence = data.get('confidence', 0.25)  # Get confidence from request
     
     # Check if stream is running
     if camera.source is None:
@@ -109,12 +110,12 @@ def start_session():
     
     session = db.create_session(name, max_count)
     
-    # Configure Detector for this session
+    # Configure Detector for this session with confidence
     session_dir = os.path.join(Config.SESSIONS_DIR, session['id'])
     captures_dir = os.path.join(session_dir, 'captures')
-    detector.set_session(session['id'], captures_dir)
+    detector.set_session(session['id'], captures_dir, confidence)  # Pass confidence
     
-    print(f"Session started: {session['id']}")
+    print(f"Session started: {session['id']}, confidence: {confidence}")
     return jsonify(session)
 
 @app.route('/api/session/stop', methods=['POST'])

@@ -6,6 +6,7 @@ import { startSession, stopSession, setSource } from '../services/api';
 const Dashboard = () => {
   const [sessionName, setSessionName] = useState('');
   const [maxCount, setMaxCount] = useState(100);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.25);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [currentCount, setCurrentCount] = useState(0);
   const [sourceInput, setSourceInput] = useState({ mode: 'rtsp', value: '' });
@@ -43,7 +44,11 @@ const Dashboard = () => {
 
   const handleStart = async () => {
     try {
-      await startSession({ name: sessionName, max_count: parseInt(maxCount) });
+      await startSession({ 
+        name: sessionName, 
+        max_count: parseInt(maxCount),
+        confidence: parseFloat(confidenceThreshold)
+      });
       setIsSessionActive(true);
       setCurrentCount(0);
       
@@ -333,7 +338,7 @@ const Dashboard = () => {
           
           {/* Session Control Panel */}
           <div className="bg-[#003473]/10 border border-[#003473]/50 p-6 rounded-xl backdrop-blur-md flex flex-col gap-4">
-            <h3 className="text-[#003473] font-bold uppercase tracking-wider text-sm bg-white/10 inline-block w-max px-2 py-1 rounded">Session Control</h3>
+            <h3 className="text-white font-bold uppercase tracking-wider text-sm bg-white/10 inline-block w-max px-2 py-1 rounded">Session Control</h3>
             
             <div className="flex flex-col gap-2">
               <label className="text-xs text-gray-400 uppercase">Session Name</label>
@@ -356,6 +361,24 @@ const Dashboard = () => {
                 onChange={(e) => setMaxCount(e.target.value)}
                 className="bg-black/20 border border-white/10 rounded px-3 py-2 text-white disabled:opacity-50"
               />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-gray-400 uppercase">Confidence Threshold</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.05"
+                  disabled={isSessionActive}
+                  value={confidenceThreshold}
+                  onChange={(e) => setConfidenceThreshold(e.target.value)}
+                  className="flex-1 accent-primary disabled:opacity-50"
+                />
+                <span className="text-white font-mono text-sm min-w-[50px]">{(confidenceThreshold * 100).toFixed(0)}%</span>
+              </div>
+              <p className="text-xs text-gray-500">Lower = more detections, Higher = more strict</p>
             </div>
 
             <div className="mt-4 flex gap-4">

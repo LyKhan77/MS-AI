@@ -19,11 +19,14 @@ class MetalSheetCounter:
         # Session handling
         self.session_id = None
         self.captures_dir = None
+        self.confidence = 0.25  # Default confidence
 
-    def set_session(self, session_id, captures_dir):
+    def set_session(self, session_id, captures_dir, confidence=0.25):
         self.session_id = session_id
         self.captures_dir = captures_dir
-        self.current_count = 0 
+        self.current_count = 0
+        self.confidence = confidence
+        print(f"[DETECTOR] Session set with confidence: {confidence}") 
 
     def process(self, frame):
         """
@@ -31,10 +34,10 @@ class MetalSheetCounter:
         If a NEW sheet is stable-detected, increment count and save capture.
         """
         if not hasattr(self, '_process_logged'):
-            print(f"[DETECTOR] Processing frame, session: {self.session_id}")
+            print(f"[DETECTOR] Processing frame, session: {self.session_id}, confidence: {self.confidence}")
             self._process_logged = True
             
-        results = self.model.predict(frame, conf=0.25, verbose=False)
+        results = self.model.predict(frame, conf=self.confidence, verbose=False)
         annotated_frame = results[0].plot()
         
         # Counting Logic (Simplified for Demo)
