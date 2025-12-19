@@ -1,0 +1,16 @@
+flask
+flask-socketio
+flask-cors
+ultralytics
+opencv-python-headless  # Better for server environments
+numpy
+eventlet
+python-dotenv
+# SAM 3 Dependencies (Based on references.md)
+git+https://github.com/facebookresearch/sam3.git
+transformers
+accelerate
+timm
+# torch - Installed manually for specific CUDA version (see README)
+# torchvision
+# torchaudio
