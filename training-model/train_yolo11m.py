@@ -33,9 +33,9 @@ with open(data_yaml_path, 'r') as f:
 
 print(f"Original classes: {data_config['names']}")
 
-# Find metalsheet class index
+# Find metalsheet class index (case-insensitive)
 metalsheet_idx = None
-for idx, name in data_config['names'].items():
+for idx, name in enumerate(data_config['names']):
     if name.lower() == 'metalsheet':
         metalsheet_idx = idx
         break
@@ -50,6 +50,9 @@ def filter_labels(labels_dir, target_class_idx):
     """Remove all labels except target class"""
     if not os.path.exists(labels_dir):
         return
+    
+    removed_count = 0
+    kept_count = 0
     
     for label_file in os.listdir(labels_dir):
         if not label_file.endswith('.txt'):
@@ -69,29 +72,38 @@ def filter_labels(labels_dir, target_class_idx):
         if filtered_lines:
             with open(label_path, 'w') as f:
                 f.writelines(filtered_lines)
+            kept_count += 1
         else:
             # Remove label file if no metalsheet detected
             os.remove(label_path)
             # Also remove corresponding image
-            img_name = label_file.replace('.txt', '.jpg')
-            img_path = os.path.join(labels_dir.replace('labels', 'images'), img_name)
-            if os.path.exists(img_path):
-                os.remove(img_path)
+            for ext in ['.jpg', '.jpeg', '.png']:
+                img_name = label_file.replace('.txt', ext)
+                img_path = os.path.join(labels_dir.replace('labels', 'images'), img_name)
+                if os.path.exists(img_path):
+                    os.remove(img_path)
+                    break
+            removed_count += 1
+    
+    return kept_count, removed_count
 
 # Filter all splits
+print("\nFiltering labels...")
 for split in ['train', 'valid', 'test']:
     labels_dir = os.path.join(dataset.location, split, 'labels')
-    filter_labels(labels_dir, metalsheet_idx)
-    print(f"✅ Filtered {split} labels")
+    if os.path.exists(labels_dir):
+        kept, removed = filter_labels(labels_dir, metalsheet_idx)
+        print(f"  {split}: kept {kept} images, removed {removed} images")
 
 # Update data.yaml with single class
-data_config['names'] = {0: 'metalsheet'}
+data_config['names'] = ['metalsheet']
 data_config['nc'] = 1
 
 with open(data_yaml_path, 'w') as f:
     yaml.dump(data_config, f)
 
-print(f"✅ Updated data.yaml with single class: {data_config['names']}")
+print(f"\n✅ Updated data.yaml with single class: {data_config['names']}")
+
 
 # ============================================
 # 3. Train YOLOv11m Model
