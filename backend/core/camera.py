@@ -13,6 +13,7 @@ class Camera:
         self.source = None  # Don't set default source yet
         self.total_frames = 0
         self.current_frame = 0
+        self.last_frame = None  # Cache last frame for pause
 
     def set_source(self, source):
         """
@@ -57,13 +58,14 @@ class Camera:
         if not self.is_running or self.cap is None:
             return None, None
         
-        # If paused, return the current frame without advancing
-        if self.is_paused:
-            return True, None  # Signal that we're paused
+        # If paused, return the last cached frame
+        if self.is_paused and self.last_frame is not None:
+            return True, self.last_frame
             
         ret, frame = self.cap.read()
         if ret:
             self.current_frame = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
+            self.last_frame = frame.copy()  # Cache the frame
         
         if not ret:
             # If video file ends, loop it
@@ -71,6 +73,8 @@ class Camera:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 self.current_frame = 0
                 ret, frame = self.cap.read()
+                if ret:
+                    self.last_frame = frame.copy()
             else:
                 return None, None
             
