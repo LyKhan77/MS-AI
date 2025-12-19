@@ -46,6 +46,19 @@ const Dashboard = () => {
       await startSession({ name: sessionName, max_count: parseInt(maxCount) });
       setIsSessionActive(true);
       setCurrentCount(0);
+      
+      // If in video mode, auto-play from start
+      if (sourceInput.mode === 'upload' && uploadedFile) {
+        // Seek to frame 0
+        await fetch('/api/playback/seek', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ frame: 0 })
+        });
+        
+        // Resume playback
+        await fetch('/api/playback/resume', { method: 'POST' });
+      }
     } catch (err) {
       console.error(err);
       alert('Failed to start session');
@@ -56,6 +69,11 @@ const Dashboard = () => {
     try {
       await stopSession();
       setIsSessionActive(false);
+      
+      // Pause video if in upload mode
+      if (sourceInput.mode === 'upload' && uploadedFile) {
+        await fetch('/api/playback/pause', { method: 'POST' });
+      }
     } catch (err) {
       console.error(err);
     }
