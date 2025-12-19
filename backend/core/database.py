@@ -11,6 +11,8 @@ class Database:
 
     def _ensure_db(self):
         if not os.path.exists(self.db_path):
+            # Create parent directory if it doesn't exist
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
             self._save_db({"sessions": [], "active_session_id": None})
 
     def _load_db(self):
