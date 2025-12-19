@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from backend.config import Config
+from config import Config
 
 class Database:
     def __init__(self):

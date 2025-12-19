@@ -1,7 +1,7 @@
 import cv2
 import time
 import threading
-from backend.config import Config
+from config import Config
 
 class Camera:
     def __init__(self):

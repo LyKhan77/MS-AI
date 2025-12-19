@@ -7,11 +7,11 @@ import time
 import threading
 import os
 
-from backend.config import Config
-from backend.core.database import Database
-from backend.core.camera import Camera
-from backend.core.detector import MetalSheetCounter
-from backend.core.analyzer import SheetAnalyzer
+from config import Config
+from core.database import Database
+from core.camera import Camera
+from core.detector import MetalSheetCounter
+from core.analyzer import SheetAnalyzer
 
 app = Flask(__name__)
 app.config.from_object(Config)

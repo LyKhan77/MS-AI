@@ -1,7 +1,7 @@
 from ultralytics import YOLOWorld
 import cv2
 import os
-from backend.config import Config
+from config import Config
 
 class MetalSheetCounter:
     def __init__(self):
