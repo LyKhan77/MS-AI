@@ -9,6 +9,7 @@ const Dashboard = () => {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [currentCount, setCurrentCount] = useState(0);
   const [sourceInput, setSourceInput] = useState({ mode: 'rtsp', value: '' });
+  const [uploadedFile, setUploadedFile] = useState(null);
   const [playbackState, setPlaybackState] = useState({
     isPaused: false,
     currentFrame: 0,
@@ -81,6 +82,7 @@ const Dashboard = () => {
       });
       const data = await response.json();
       if (response.ok) {
+        setUploadedFile(file.name);
         alert(`Video uploaded: ${data.path}`);
       } else {
         alert(`Upload failed: ${data.error}`);
@@ -89,6 +91,12 @@ const Dashboard = () => {
       console.error(err);
       alert('Upload error');
     }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    // Optionally stop camera
+    // camera.stop() via API if needed
   };
 
   const handlePlayPause = async () => {
@@ -181,43 +189,59 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex gap-2">
-                  <input 
-                    type="file" 
-                    accept="video/*"
-                    onChange={handleFileUpload}
-                    className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-secondary file:cursor-pointer"
-                  />
-                </div>
-                
-                {/* Playback Controls */}
-                <div className="flex items-center gap-3 p-3 bg-black/20 rounded border border-white/5">
-                  <button 
-                    onClick={handlePlayPause}
-                    className="p-2 rounded bg-primary hover:bg-secondary transition-colors"
-                    title={playbackState.isPaused ? "Resume" : "Pause"}
-                  >
-                    {playbackState.isPaused ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-                    )}
-                  </button>
-                  
-                  <div className="flex-1 flex items-center gap-2">
+                {!uploadedFile ? (
+                  <div className="flex gap-2">
                     <input 
-                      type="range" 
-                      min="0" 
-                      max={playbackState.totalFrames || 100}
-                      value={playbackState.currentFrame}
-                      onChange={handleSeek}
-                      className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                      type="file" 
+                      accept="video/*"
+                      onChange={handleFileUpload}
+                      className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-secondary file:cursor-pointer"
                     />
-                    <span className="text-xs text-gray-400 min-w-[80px]">
-                      {playbackState.currentFrame} / {playbackState.totalFrames}
-                    </span>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-3 bg-black/20 rounded border border-white/5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary shrink-0"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 11 2 2 4-4"/></svg>
+                    <span className="flex-1 text-sm text-white truncate">{uploadedFile}</span>
+                    <button 
+                      onClick={handleRemoveFile}
+                      className="p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                      title="Remove video"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  </div>
+                )}
+                
+                {/* Playback Controls - Only show if file uploaded */}
+                {uploadedFile && (
+                  <div className="flex items-center gap-3 p-3 bg-black/20 rounded border border-white/5">
+                    <button 
+                      onClick={handlePlayPause}
+                      className="p-2 rounded bg-primary hover:bg-secondary transition-colors"
+                      title={playbackState.isPaused ? "Resume" : "Pause"}
+                    >
+                      {playbackState.isPaused ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
+                      )}
+                    </button>
+                    
+                    <div className="flex-1 flex items-center gap-2">
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max={playbackState.totalFrames || 100}
+                        value={playbackState.currentFrame}
+                        onChange={handleSeek}
+                        className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                      />
+                      <span className="text-xs text-gray-400 min-w-[80px]">
+                        {playbackState.currentFrame} / {playbackState.totalFrames}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
