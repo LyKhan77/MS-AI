@@ -41,7 +41,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-8 h-full flex flex-col gap-8">
+    <div className="p-8 pb-12 h-full flex flex-col gap-8 overflow-y-auto">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
