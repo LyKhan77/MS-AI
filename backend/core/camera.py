@@ -84,6 +84,7 @@ class Camera:
         self.is_paused = True
     
     def resume(self):
+        print(f"[CAMERA] Resuming playback from frame {self.current_frame}")
         self.is_paused = False
     
     def seek(self, frame_number):

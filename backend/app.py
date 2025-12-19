@@ -60,6 +60,14 @@ def generate_frames():
         # Check if session is active
         active_session = db.get_active_session()
         
+        # Debug logging
+        if active_session and not hasattr(generate_frames, '_session_logged'):
+            print(f"[DEBUG] Session active: {active_session['id']}, is_paused: {camera.is_paused}")
+            generate_frames._session_logged = True
+        elif not active_session and hasattr(generate_frames, '_session_logged'):
+            print("[DEBUG] No active session, raw stream mode")
+            delattr(generate_frames, '_session_logged')
+        
         if active_session:
             # Run detection only when session is active
             count, debug_frame = detector.process(frame)

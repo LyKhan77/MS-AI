@@ -29,6 +29,10 @@ class MetalSheetCounter:
         Run detection on the frame.
         If a NEW sheet is stable-detected, increment count and save capture.
         """
+        if not hasattr(self, '_process_logged'):
+            print(f"[DETECTOR] Processing frame, session: {self.session_id}")
+            self._process_logged = True
+            
         results = self.model.predict(frame, conf=0.25, verbose=False)
         annotated_frame = results[0].plot()
         
