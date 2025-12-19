@@ -141,6 +141,11 @@ def seek_playback():
 def playback_info():
     return jsonify(camera.get_playback_info())
 
+@app.route('/api/camera/stop', methods=['POST'])
+def stop_camera():
+    camera.stop()
+    return jsonify({"status": "stopped"})
+
 @socketio.on('connect')
 def handle_connect(auth=None):
     print('Client connected')

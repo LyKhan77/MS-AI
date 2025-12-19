@@ -93,10 +93,14 @@ const Dashboard = () => {
     }
   };
 
-  const handleRemoveFile = () => {
-    setUploadedFile(null);
-    // Optionally stop camera
-    // camera.stop() via API if needed
+  const handleRemoveFile = async () => {
+    try {
+      await fetch('/api/camera/stop', { method: 'POST' });
+      setUploadedFile(null);
+    } catch (err) {
+      console.error('Failed to stop camera:', err);
+      setUploadedFile(null);
+    }
   };
 
   const handlePlayPause = async () => {
