@@ -10,7 +10,7 @@ class MetalSheetCounter:
         self.model = YOLOWorld(self.model_path)
         
         # Define what we are looking for
-        self.model.set_classes(["metal sheet", "rectangular plate"])
+        self.model.set_classes(["metal sheet", "rectangular plate", "steel plate", "iron sheet", "aluminum sheet", "silver sheet"])
         
         self.current_count = 0
         self.last_detection_time = 0
