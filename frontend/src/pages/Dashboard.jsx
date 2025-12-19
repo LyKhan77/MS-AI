@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import LiveStream from '../components/LiveStream';
 import StatsCard from '../components/StatsCard';
 import { startSession, stopSession, setSource } from '../services/api';
@@ -16,6 +16,9 @@ const Dashboard = () => {
     totalFrames: 0,
     fps: 0
   });
+  
+  // Ref for file input to reset it
+  const fileInputRef = useRef(null);
 
   // Poll playback info when in video mode
   React.useEffect(() => {
@@ -97,9 +100,45 @@ const Dashboard = () => {
     try {
       await fetch('/api/camera/stop', { method: 'POST' });
       setUploadedFile(null);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (err) {
       console.error('Failed to stop camera:', err);
       setUploadedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      // Stop camera
+      await fetch('/api/camera/stop', { method: 'POST' });
+      
+      // Reset all states
+      setUploadedFile(null);
+      setSourceInput({ mode: 'rtsp', value: '' });
+      setCurrentCount(0);
+      setPlaybackState({
+        isPaused: false,
+        currentFrame: 0,
+        totalFrames: 0,
+        fps: 0
+      });
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Reload page to clear all cache
+      window.location.reload();
+    } catch (err) {
+      console.error('Refresh error:', err);
+      window.location.reload();
     }
   };
 
@@ -133,8 +172,19 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold text-white">Production Dashboard</h1>
           <p className="text-gray-400">Real-time Metal Sheet Counting & QC</p>
         </div>
-        <div className={`px-4 py-2 rounded-full font-bold ${isSessionActive ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-gray-800 text-gray-500'}`}>
-          {isSessionActive ? 'SESSION ACTIVE' : 'IDLE'}
+        <div className="flex items-center gap-3">
+          <div className={`px-4 py-2 rounded-full font-bold ${isSessionActive ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-gray-800 text-gray-500'}`}>
+            {isSessionActive ? 'SESSION ACTIVE' : 'IDLE'}
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+            title="Refresh & Clear Cache"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -196,6 +246,7 @@ const Dashboard = () => {
                 {!uploadedFile ? (
                   <div className="flex gap-2">
                     <input 
+                      ref={fileInputRef}
                       type="file" 
                       accept="video/*"
                       onChange={handleFileUpload}
