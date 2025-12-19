@@ -15,7 +15,7 @@ class Config:
     FRAME_RATE = 30
     
     # Model Settings
-    YOLO_MODEL_PATH = "yolov8s-world.pt" # Zero-shot world model
+    YOLO_MODEL_PATH = os.path.join(BASE_DIR, 'yolov8n.pt') # Custom trained model
     SAM_CHECKPOINT = "sam3_vit_h.pth" # Placeholder path
     
     # Analysis

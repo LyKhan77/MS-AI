@@ -1,4 +1,4 @@
-from ultralytics import YOLOWorld
+from ultralytics import YOLO
 import cv2
 import os
 from config import Config
@@ -6,11 +6,10 @@ from config import Config
 class MetalSheetCounter:
     def __init__(self):
         self.model_path = Config.YOLO_MODEL_PATH
-        # Load local model or download if not exists (Ultralytics handles downloads usually)
-        self.model = YOLOWorld(self.model_path)
-        
-        # Define what we are looking for
-        self.model.set_classes(["metal sheet", "rectangular plate", "steel plate", "iron sheet", "aluminum sheet", "silver sheet"])
+        # Load custom trained model
+        self.model = YOLO(self.model_path)
+        print(f"[YOLO] Loaded custom model from: {self.model_path}")
+        print(f"[YOLO] Model classes: {self.model.names}")
         
         self.current_count = 0
         self.last_detection_time = 0
