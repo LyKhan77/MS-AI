@@ -3,9 +3,8 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import Dashboard from './pages/Dashboard';
 import Sessions from './pages/Sessions';
 import Dimensions from './pages/Dimensions';
+import Defects from './pages/Defects';
 
-// Placeholder Page
-const Defects = () => <div className="p-8 text-white">Defect Analysis Page (Coming Soon in Phase 2)</div>;
 
 function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

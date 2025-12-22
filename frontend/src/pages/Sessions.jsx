@@ -248,20 +248,13 @@ const Sessions = () => {
 };
 
 // Session Detail Modal Component
+// Session Detail Modal Component
 const SessionDetailModal = ({ session, onClose }) => {
   const [captures, setCaptures] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [defects, setDefects] = useState([]);
-  const [defectStats, setDefectStats] = useState(null);
-  const [showDefects, setShowDefects] = useState(false);
 
   useEffect(() => {
     fetchCaptures();
-    // Check if analysis already exists
-    if (session.defects_found && session.defects_found > 0) {
-      fetchDefects();
-    }
   }, []);
 
   const fetchCaptures = async () => {
@@ -274,54 +267,6 @@ const SessionDetailModal = ({ session, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchDefects = async () => {
-    try {
-      const response = await fetch(`/api/sessions/${session.id}/defects`);
-      const data = await response.json();
-      setDefects(data.defects || []);
-      setDefectStats({
-        by_type: data.stats_by_type || {},
-        by_severity: data.stats_by_severity || {}
-      });
-      setShowDefects(true);
-    } catch (err) {
-      console.error('Failed to fetch defects:', err);
-    }
-  };
-
-  const handleRunSegmentation = async () => {
-    if (!confirm('Run defect analysis? This may take several minutes.')) {
-      return;
-    }
-    
-    setIsAnalyzing(true);
-    try {
-      const response = await fetch(`/api/sessions/${session.id}/analyze_defects`, {
-        method: 'POST'
-      });
-      const data = await response.json();
-      
-      if (data.status === 'completed') {
-        setDefects(data.results.defects || []);
-        setShowDefects(true);
-        alert(`✅ Analysis complete! Found ${data.results.defects_found} defects in ${data.results.processing_time.toFixed(1)}s`);
-        // Refresh defect stats
-        await fetchDefects();
-      } else {
-        alert('❌ Analysis failed: ' + data.error);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('❌ Analysis error: ' + err.message);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-  
-  const handleExportDefects = () => {
-    window.open(`/api/sessions/${session.id}/defects/export`, '_blank');
   };
 
   return (
@@ -343,76 +288,6 @@ const SessionDetailModal = ({ session, onClose }) => {
           </button>
         </div>
 
-        {/* Defect Analysis Controls */}
-        <div className="p-4 md:p-6 border-b border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base md:text-lg font-semibold text-white flex items-center gap-2">
-                <span>🔍</span> Defect Analysis
-              </h3>
-              <p className="text-xs md:text-sm text-gray-400 mt-1">
-                Run SAM-3 segmentation to detect scratches, dents, rust, holes & coating bubbles
-              </p>
-              {session.defects_found > 0 && (
-                <p className="text-xs text-green-400 mt-1">
-                  ✓ {session.defects_found} defects found in {session.defects_analyzed} images
-                </p>
-              )}
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleRunSegmentation}
-                disabled={isAnalyzing}
-                className="px-4 py-2 bg-primary hover:bg-secondary rounded-lg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm md:text-base"
-              >
-                {isAnalyzing ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>
-                    Analyzing...
-                  </span>
-                ) : (
-                  '🔍 Run Segmentation'
-                )}
-              </button>
-              {defects.length > 0 && (
-                <button
-                  onClick={handleExportDefects}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-white font-medium transition-all text-sm md:text-base"
-                >
-                  📦 Export ZIP
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Defect Results */}
-        {showDefects && defects.length > 0 && (
-          <div className="p-4 md:p-6 border-b border-white/10 bg-white/5">
-            <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
-              <span>🎯</span> Defects Found: {defects.length}
-            </h4>
-            
-            {/* Stats */}
-            {defectStats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                {Object.entries(defectStats.by_severity).map(([severity, count]) => (
-                  <div key={severity} className="bg-black/20 rounded-lg p-3 border border-white/10">
-                    <div className={`text-xs font-semibold mb-1 ${
-                      severity === 'critical' ? 'text-red-400' :
-                      severity === 'moderate' ? 'text-yellow-400' :
-                      'text-green-400'
-                    }`}>
-                      {severity.toUpperCase()}
-                    </div>
-                    <div className="text-2xl font-bold text-white">{count}</div>
-                  </div>
-                ))}
-              </div>
-            )}
             
             {/* Defect Gallery */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
