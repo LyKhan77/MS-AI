@@ -72,10 +72,18 @@ def generate_frames():
             # Run detection only when session is active
             count, debug_frame = detector.process(frame)
             final_frame = debug_frame if debug_frame is not None else frame
+            
+            # Update session count in database only when it changes
+            if not hasattr(generate_frames, '_last_count') or generate_frames._last_count != count:
+                db.update_session_count(active_session['id'], count)
+                generate_frames._last_count = count
         else:
             # No detection, just raw frame
             final_frame = frame
             count = 0
+            # Reset last count when no session
+            if hasattr(generate_frames, '_last_count'):
+                delattr(generate_frames, '_last_count')
         
         # Prepare frame for streaming (JPEG -> Base64)
         _, buffer = cv2.imencode('.jpg', final_frame)
