@@ -87,12 +87,16 @@ class DefectAnalyzer:
             print(f"[DefectAnalyzer] Model on device: {next(self.model.parameters()).device}")
             
         except Exception as e:
-            print(f"[DefectAnalyzer] Error loading SAM-3 from HuggingFace: {e}")
-            print("[DefectAnalyzer] Falling back to mock mode for testing")
-            print("[DefectAnalyzer] Make sure you're logged in: run 'huggingface-cli login' or './hf_login.sh'")
+            error_msg = f"[DefectAnalyzer] CRITICAL: Failed to load SAM-3 model: {e}"
+            print(error_msg)
+            print("[DefectAnalyzer] Please ensure:")
+            print("  1. You are logged in to HuggingFace: run 'huggingface-cli login' or './hf_login.sh'")
+            print("  2. You have access to the 'facebook/sam3' model")
+            print("  3. Required dependencies are installed: transformers, torch")
             import traceback
             traceback.print_exc()
-            self.model = "mock"
+            # Don't fallback to mock - raise error
+            raise RuntimeError(f"SAM-3 model loading failed. Defect analysis cannot proceed. {e}")
 
     
     def analyze_session_captures(self, session_id: int, captures_dir: str) -> Dict:
@@ -172,9 +176,9 @@ class DefectAnalyzer:
         """
         defects = []
         
-        # Mock mode for testing
-        if self.model == "mock":
-            return self._mock_detection(image, img_filename, session_id)
+        # Ensure model is loaded
+        if self.model is None:
+            raise RuntimeError("SAM-3 model not loaded. Cannot perform defect analysis.")
         
         # Preprocess image for SAM-3
         # Convert BGR (OpenCV) to RGB (SAM expects RGB)
@@ -354,55 +358,6 @@ class DefectAnalyzer:
         cv2.imwrite(crop_path, crop)
         
         return crop_filename
-    
-    def _mock_detection(self, image: np.ndarray, img_filename: str, session_id: int) -> List[Dict]:
-        """
-        Mock defect detection for testing without SAM-3
-        Generates random defects for demonstration
-        """
-        import random
-        
-        defects = []
-        h, w = image.shape[:2]
-        
-        # Generate 0-3 random defects per image
-        num_defects = random.randint(0, 3)
-        
-        for i in range(num_defects):
-            defect_type = random.choice(list(self.defect_prompts.keys()))
-            
-            # Random bbox
-            x = random.randint(0, w - 100)
-            y = random.randint(0, h - 100)
-            bbox_w = random.randint(50, 200)
-            bbox_h = random.randint(50, 200)
-            bbox = [x, y, bbox_w, bbox_h]
-            
-            area = bbox_w * bbox_h
-            severity = self._calculate_severity(area)
-            confidence = random.uniform(0.6, 0.95)
-            
-            # Create simple mask
-            mask = np.zeros((h, w), dtype=bool)
-            mask[y:y+bbox_h, x:x+bbox_w] = True
-            
-            # Save crop
-            crop_filename = self._save_defect_crop(
-                image, mask, bbox, session_id, img_filename, defect_type
-            )
-            
-            defects.append({
-                'image_filename': img_filename,
-                'defect_type': defect_type,
-                'severity': severity,
-                'bbox': bbox,
-                'area_pixels': area,
-                'confidence': confidence,
-                'crop_filename': crop_filename,
-                'timestamp': datetime.now().isoformat()
-            })
-        
-        return defects
 
 
 # Global instance (lazy loaded)
