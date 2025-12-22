@@ -42,6 +42,16 @@ const Dashboard = () => {
     }
   }, [sourceInput.mode]);
 
+  // Cleanup on unmount or when leaving dashboard
+  React.useEffect(() => {
+    return () => {
+      // Clear video when unmounting
+      if (sourceInput.mode === 'upload' && uploadedFile) {
+        handleRemoveVideo();
+      }
+    };
+  }, []);
+
   const handleStart = async () => {
     try {
       await startSession({ 
@@ -121,20 +131,44 @@ const Dashboard = () => {
 
   const handleRemoveFile = async () => {
     try {
+      // Stop camera/video stream
       await fetch('/api/camera/stop', { method: 'POST' });
+      
+      // Clear uploaded file state
       setUploadedFile(null);
-      // Reset file input
+      
+      // Reset playback state
+      setPlaybackState({
+        isPaused: false,
+        currentFrame: 0,
+        totalFrames: 0,
+        fps: 0
+      });
+      
+      // Reset file input to clear cache
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      
+      console.log('[Dashboard] Video removed and cleared');
     } catch (err) {
       console.error('Failed to stop camera:', err);
+      // Still clear state even if API fails
       setUploadedFile(null);
+      setPlaybackState({
+        isPaused: false,
+        currentFrame: 0,
+        totalFrames: 0,
+        fps: 0
+      });
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
+
+  // Alias for cleanup effect
+  const handleRemoveVideo = handleRemoveFile;
 
   const handleRefresh = async () => {
     try {
