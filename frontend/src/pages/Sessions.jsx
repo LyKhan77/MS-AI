@@ -324,10 +324,10 @@ const SessionDetailModal = ({ session, onClose }) => {
               <div className="text-center text-gray-400 py-8">No captures found</div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {captures.map((filename, index) => (
+                {captures.map((capture, index) => (
                   <div key={index} className="aspect-square bg-white/5 rounded-lg overflow-hidden border border-white/10 hover:border-primary transition-colors">
                     <img
-                      src={`/api/sessions/${session.id}/captures/${filename}`}
+                      src={`/api/sessions/${session.id}/captures/${capture.filename}`}
                       alt={`Capture ${index + 1}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {
