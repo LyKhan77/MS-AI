@@ -1,229 +1,152 @@
-# SAM-3 Installation Guide (HuggingFace Transformers)
+# SAM-3 Setup & Testing Guide
 
-## Quick Setup for HuggingFace SAM-3
+## Quick Start
 
-Your reference project uses **SAM-3 from HuggingFace Transformers**, not the standalone SAM-3 package.
+### Step 1: Login to HuggingFace
 
-### Step 1: Install Dependencies on PC GPU
+**Option 1 - Using Script (Easiest):**
 
 ```bash
-# SSH to PC GPU
-ssh gspe-ai3@gspe-ai3-MS-7E32
-
-# Navigate to project
 cd /home/gspe-ai3/project_cv/MS-AI/backend
-
-# Activate virtual environment
 source venv/bin/activate
-
-# Install HuggingFace Transformers (from main branch for latest SAM-3)
-pip install git+https://github.com/huggingface/transformers
-
-# Or install stable version:
-# pip install transformers
-
-# Install other required packages
-pip install torch torchvision opencv-python pillow
+chmod +x hf_login.sh
+./hf_login.sh
 ```
 
-### Step 2: Test Model Loading
+**Option 2 - Manual:**
 
 ```bash
-# Test SAM-3 model loads correctly
+cd /home/gspe-ai3/project_cv/MS-AI/backend
+source venv/bin/activate
+pip install huggingface-hub
+huggingface-cli login
+# Paste your token from: https://huggingface.co/settings/tokens
+```
+
+### Step 2: Test SAM-3 Loading
+
+```bash
 python -c "from core.defect_analyzer import DefectAnalyzer; analyzer = DefectAnalyzer(); analyzer.load_model()"
 ```
 
-**Expected Output:**
+**Expected:**
 
 ```
 [DefectAnalyzer] Initialized on device: cuda
 [DefectAnalyzer] Loading SAM-3 from HuggingFace Transformers...
-[DefectAnalyzer] Loading model: facebook/sam3-large
-Downloading model files...
+[DefectAnalyzer] Loading model: facebook/sam3
+Downloading model... (first time only, ~2GB)
 [DefectAnalyzer] SAM-3 loaded successfully from HuggingFace!
 [DefectAnalyzer] Model on device: cuda:0
 ```
 
-**First Run Note:** Model will be downloaded from HuggingFace (~1-2GB). Subsequent runs will use cached model.
+### Step 3: Start Backend
+
+```bash
+cd /home/gspe-ai3/project_cv/MS-AI
+python backend/app.py
+```
+
+---
+
+## Complete Installation
+
+```bash
+# On PC GPU (via SSH)
+cd /home/gspe-ai3/project_cv/MS-AI/backend
+source venv/bin/activate
+
+# Install dependencies
+pip install transformers huggingface-hub torch torchvision pillow opencv-python
+
+# Login to HuggingFace
+./hf_login.sh
+
+# Test
+python -c "from core.defect_analyzer import DefectAnalyzer; analyzer = DefectAnalyzer(); analyzer.load_model()"
+```
 
 ---
 
 ## How It Works
 
-### HuggingFace SAM-3 Approach
+### 1. Model Loading
 
 ```python
-from transformers import AutoProcessor, AutoModelForMaskGeneration
+from transformers import AutoImageProcessor, AutoModel
 
-# Load model from HuggingFace Hub
-processor = AutoProcessor.from_pretrained("facebook/sam3-large")
-model = AutoModelForMaskGeneration.from_pretrained("facebook/sam3-large")
+processor = AutoImageProcessor.from_pretrained("facebook/sam3")
+model = AutoModel.from_pretrained("facebook/sam3")
+```
 
-# Prepare inputs with text prompt
+### 2. Inference (Text-Prompted)
+
+```python
+# Prepare inputs
 inputs = processor(
     images=pil_image,
-    text=["scratch on metal surface"],  # Zero-shot text prompt
+    text=["scratch on metal surface"],
     return_tensors="pt"
 )
 
 # Run inference
 outputs = model(**inputs)
 
-# Get masks and scores
-masks = outputs.pred_masks
-scores = outputs.iou_scores
-```
-
-### Zero-Shot Defect Detection
-
-The system uses text prompts to detect defects **without training**:
-
-```python
-defect_prompts = {
-    'scratch': 'linear scratch mark on metal surface',
-    'dent': 'dent or deformation on metal sheet',
-    'rust': 'rust spot or corrosion on metal',
-    'hole': 'hole or perforation in metal',
-    'coating_bubble': 'paint bubble or coating defect'
-}
-```
-
----
-
-## Model Options
-
-### Available SAM-3 Models
-
-| Model ID              | Size   | Accuracy | Speed     |
-| --------------------- | ------ | -------- | --------- |
-| `facebook/sam3-large` | ~1.2GB | Good     | Fast      |
-| `facebook/sam3-huge`  | ~2.4GB | Better   | Slower    |
-| `facebook/sam3-base`  | ~350MB | OK       | Very Fast |
-
-### Change Model (Optional)
-
-Edit `backend/core/defect_analyzer.py`:
-
-```python
-# Line ~75 in load_model()
-model_id = "facebook/sam3-large"  # Change to sam3-huge or sam3-base
-```
-
----
-
-## Configuration
-
-### Adjust Detection Parameters
-
-`backend/core/defect_analyzer.py`:
-
-```python
-# Confidence threshold (0-1)
-self.confidence_threshold = 0.5  # Lower = more detections
-
-# Severity thresholds (pixels²)
-self.severity_thresholds = {
-    'minor': 100,      # Small defects
-    'moderate': 500,   # Medium defects
-    'critical': 9999999  # Large defects
-}
-```
-
-### Custom Defect Types
-
-Add your own defect prompts:
-
-```python
-self.defect_prompts = {
-    'scratch': 'linear scratch mark on metal surface',
-    'dent': 'dent or deformation on metal sheet',
-    'rust': 'rust spot or corrosion on metal',
-    'hole': 'hole or perforation in metal',
-    'coating_bubble': 'paint bubble or coating defect',
-    # Add custom:
-    'crack': 'crack or fracture line on metal',
-    'weld_defect': 'poor weld or welding defect'
-}
+# Get masks
+masks = outputs.pred_masks  # or outputs['masks']
+scores = outputs.iou_scores  # or outputs['scores']
 ```
 
 ---
 
 ## Troubleshooting
 
-### Issue: "No module named 'transformers'"
+### "401 Unauthorized" or "Repository Not Found"
+
+**Solution:** Login to HuggingFace
 
 ```bash
-pip install git+https://github.com/huggingface/transformers
+huggingface-cli login
 ```
 
-### Issue: Model download fails
-
-Check internet connection and HuggingFace Hub access:
+### "No module named 'transformers'"
 
 ```bash
-python -c "from transformers import AutoProcessor; AutoProcessor.from_pretrained('facebook/sam3-large')"
+pip install transformers
 ```
 
-### Issue: CUDA out of memory
+### Still falling back to mock mode
 
-Use smaller model or CPU:
+Check error message in console. Common issues:
 
-```python
-# In defect_analyzer.py __init__():
-DefectAnalyzer(device='cpu')  # Use CPU instead
-
-# Or use smaller model:
-model_id = "facebook/sam3-base"  # Smaller model
-```
-
-### Issue: Mock mode still active
-
-Check for errors in model loading:
-
-```bash
-python -c "from core.defect_analyzer import DefectAnalyzer; analyzer = DefectAnalyzer(); analyzer.load_model()"
-```
-
-If you see `Falling back to mock mode`, check the error message above it.
+- Not logged in → Run `huggingface-cli login`
+- Wrong model ID → Should be `facebook/sam3`
+- No internet connection → Check connection
 
 ---
 
-## Complete Setup Commands (Copy-Paste Ready)
+## Model Information
 
-```bash
-# On PC GPU via SSH
-cd /home/gspe-ai3/project_cv/MS-AI/backend
-source venv/bin/activate
-
-# Install transformers from main branch (for latest SAM-3)
-pip install git+https://github.com/huggingface/transformers
-
-# Test
-python -c "from core.defect_analyzer import DefectAnalyzer; analyzer = DefectAnalyzer(); analyzer.load_model()"
-
-# If successful, restart backend
-cd ..
-python app.py
-```
+- **Model ID:** `facebook/sam3`
+- **Size:** ~2.4GB
+- **Cache Location:** `~/.cache/huggingface/hub/`
+- **Requirements:** HuggingFace account + Read token
 
 ---
 
-## Performance Expectations
+## Testing Workflow
 
-| Mode            | Processing Speed    | Accuracy           |
-| --------------- | ------------------- | ------------------ |
-| **Mock**        | ~1-2s for 10 images | Random (demo only) |
-| **SAM-3 (GPU)** | ~5-15s per image    | High (zero-shot)   |
-| **SAM-3 (CPU)** | ~30-60s per image   | High (zero-shot)   |
-
-**Note:** First image takes longer due to model initialization. Subsequent images are faster.
+1. **Login:** `./hf_login.sh`
+2. **Test Load:** `python -c "from core.defect_analyzer import get_defect_analyzer; analyzer = get_defect_analyzer(); analyzer.load_model()"`
+3. **Run Backend:** `python app.py`
+4. **Test Frontend:** Open Defects page, select session, click "Run Segmentation"
 
 ---
 
-## Next Steps
+## Performance
 
-1. ✅ Install transformers on PC GPU
-2. ✅ Test model loading
-3. ✅ Run backend (`python app.py`)
-4. ✅ Test defect detection on Defects page
-5. ✅ Tune confidence thresholds if needed
+| Mode        | Speed               | Accuracy              |
+| ----------- | ------------------- | --------------------- |
+| Mock        | ~1-2s for 10 images | Random (testing only) |
+| SAM-3 (GPU) | ~10-20s per image   | High (zero-shot)      |
+| SAM-3 (CPU) | ~60-120s per image  | High (zero-shot)      |

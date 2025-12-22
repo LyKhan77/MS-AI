@@ -66,15 +66,17 @@ class DefectAnalyzer:
         try:
             print(f"[DefectAnalyzer] Loading SAM-3 from HuggingFace Transformers...")
             
-            # Import HuggingFace Transformers
-            from transformers import AutoProcessor, AutoModelForMaskGeneration
+            # Import HuggingFace Transformers (CORRECT API)
+            from transformers import AutoImageProcessor, AutoModel
             
-            # Load SAM-3 model from HuggingFace
-            model_id = "facebook/sam3-large"  # or "facebook/sam3-huge" for better accuracy
+            # SAM-3 model ID (correct format)
+            model_id = "facebook/sam3"
             
             print(f"[DefectAnalyzer] Loading model: {model_id}")
-            self.processor = AutoProcessor.from_pretrained(model_id)
-            self.model = AutoModelForMaskGeneration.from_pretrained(model_id)
+            
+            # Load processor and model
+            self.processor = AutoImageProcessor.from_pretrained(model_id)
+            self.model = AutoModel.from_pretrained(model_id)
             
             # Move to GPU if available
             self.model.to(self.device)
@@ -86,6 +88,7 @@ class DefectAnalyzer:
         except Exception as e:
             print(f"[DefectAnalyzer] Error loading SAM-3 from HuggingFace: {e}")
             print("[DefectAnalyzer] Falling back to mock mode for testing")
+            print("[DefectAnalyzer] Make sure you're logged in: run 'huggingface-cli login' or './hf_login.sh'")
             import traceback
             traceback.print_exc()
             self.model = "mock"
