@@ -59,53 +59,37 @@ class DefectAnalyzer:
         print(f"[DefectAnalyzer] Initialized on device: {self.device}")
     
     def load_model(self):
-        """Load SAM-3 model - called on first use to save memory"""
+        """Load SAM-3 model from HuggingFace Transformers - called on first use to save memory"""
         if self.model is not None:
             return  # Already loaded
         
         try:
-            print(f"[DefectAnalyzer] Loading SAM-3 from {self.checkpoint_path}...")
+            print(f"[DefectAnalyzer] Loading SAM-3 from HuggingFace Transformers...")
             
-            # Try importing SAM-3 modules (priority order)
-            try:
-                # Option 1: Official SAM-3 package
-                from sam3 import sam3_model_registry, Sam3Predictor
-                
-                # Load model
-                self.model = sam3_model_registry['vit_h'](checkpoint=self.checkpoint_path)
-                self.model.to(self.device)
-                self.model.eval()
-                
-                # Create predictor for inference
-                self.predictor = Sam3Predictor(self.model)
-                
-                print("[DefectAnalyzer] SAM-3 loaded successfully!")
-                print(f"[DefectAnalyzer] Model on device: {next(self.model.parameters()).device}")
-                
-            except ImportError:
-                # Option 2: Try segment-anything package (SAM 2 compatibility)
-                print("[DefectAnalyzer] SAM-3 not found, trying SAM 2 compatibility mode...")
-                from segment_anything import sam_model_registry, SamPredictor
-                
-                model_type = "vit_h"  # Can be vit_h, vit_l, or vit_b
-                self.model = sam_model_registry[model_type](checkpoint=self.checkpoint_path)
-                self.model.to(self.device)
-                self.model.eval()
-                
-                self.predictor = SamPredictor(self.model)
-                
-                print("[DefectAnalyzer] SAM 2 loaded successfully (compatibility mode)")
+            # Import HuggingFace Transformers
+            from transformers import AutoProcessor, AutoModelForMaskGeneration
             
-        except FileNotFoundError:
-            print(f"[DefectAnalyzer] Checkpoint not found: {self.checkpoint_path}")
-            print("[DefectAnalyzer] Falling back to mock mode for testing")
-            self.model = "mock"
+            # Load SAM-3 model from HuggingFace
+            model_id = "facebook/sam3-large"  # or "facebook/sam3-huge" for better accuracy
+            
+            print(f"[DefectAnalyzer] Loading model: {model_id}")
+            self.processor = AutoProcessor.from_pretrained(model_id)
+            self.model = AutoModelForMaskGeneration.from_pretrained(model_id)
+            
+            # Move to GPU if available
+            self.model.to(self.device)
+            self.model.eval()
+            
+            print("[DefectAnalyzer] SAM-3 loaded successfully from HuggingFace!")
+            print(f"[DefectAnalyzer] Model on device: {next(self.model.parameters()).device}")
+            
         except Exception as e:
-            print(f"[DefectAnalyzer] Error loading model: {e}")
+            print(f"[DefectAnalyzer] Error loading SAM-3 from HuggingFace: {e}")
             print("[DefectAnalyzer] Falling back to mock mode for testing")
             import traceback
             traceback.print_exc()
             self.model = "mock"
+
     
     def analyze_session_captures(self, session_id: int, captures_dir: str) -> Dict:
         """
@@ -172,7 +156,7 @@ class DefectAnalyzer:
     
     def _analyze_image(self, image: np.ndarray, img_filename: str, session_id: int) -> List[Dict]:
         """
-        Analyze a single image for defects
+        Analyze a single image for defects using SAM-3 from HuggingFace
         
         Args:
             image: Image as numpy array (BGR from cv2)
@@ -192,32 +176,37 @@ class DefectAnalyzer:
         # Convert BGR (OpenCV) to RGB (SAM expects RGB)
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
-        # Set image for SAM-3 predictor (handles encoding internally)
-        self.predictor.set_image(image_rgb)
+        # Import PIL for HuggingFace processing
+        from PIL import Image as PILImage
+        pil_image = PILImage.fromarray(image_rgb)
         
-        # Detect defects with each prompt
+        # Detect defects with each text prompt
         for defect_type, prompt in self.defect_prompts.items():
             try:
-                # Run SAM-3 prediction with text prompt
-                # Note: predict_with_text might not be available in all SAM versions
-                # If error occurs, falls back to point-based prompts
-                try:
-                    masks, scores, _ = self.predictor.predict_with_text(
-                        text_prompt=prompt,
-                        multimask_output=True
-                    )
-                except AttributeError:
-                    # Fallback: SAM 2 doesn't have text prompts
-                    # Use automatic mask generation instead
-                    print(f"[DefectAnalyzer] Text prompts not supported, skipping {defect_type}")
-                    continue
+                # Prepare inputs with text prompt
+                inputs = self.processor(
+                    images=pil_image,
+                    text=[prompt],  # Text prompt for zero-shot
+                    return_tensors="pt"
+                ).to(self.device)
+                
+                # Run inference
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+                
+                # Get predicted masks and scores
+                masks = outputs.pred_masks.cpu().numpy()
+                scores = outputs.iou_scores.cpu().numpy()
                 
                 # Process each detected mask
                 if masks is not None and len(masks) > 0:
-                    for mask, score in zip(masks, scores):
+                    for i, (mask, score) in enumerate(zip(masks[0], scores[0])):
                         if score > self.confidence_threshold:
+                            # Convert mask to binary (0 or 1)
+                            mask_binary = (mask > 0.5).astype(np.uint8)
+                            
                             defect = self._process_defect_mask(
-                                image, mask, score, defect_type, 
+                                image, mask_binary, score, defect_type,
                                 img_filename, session_id
                             )
                             if defect is not None:
@@ -230,6 +219,7 @@ class DefectAnalyzer:
                 continue
         
         return defects
+
     
     def _process_defect_mask(
         self, 
