@@ -66,23 +66,24 @@ class DefectAnalyzer:
         try:
             print(f"[DefectAnalyzer] Loading SAM-3 from HuggingFace Transformers...")
             
-            # Import HuggingFace Transformers (CORRECT API)
-            from transformers import AutoImageProcessor, AutoModel
+            # Import SAM-3 for TEXT PROMPTS (based on reference project)
+            # Reference uses Sam3Model + Sam3Processor for text prompt support
+            from transformers import Sam3Processor, Sam3Model
             
-            # SAM-3 model ID (correct format)
+            # SAM-3 model ID
             model_id = "facebook/sam3"
             
-            print(f"[DefectAnalyzer] Loading model: {model_id}")
+            print(f"[DefectAnalyzer] Loading model: {model_id} (Text Prompt Mode)")
             
-            # Load processor and model
-            self.processor = AutoImageProcessor.from_pretrained(model_id)
-            self.model = AutoModel.from_pretrained(model_id)
+            # Load processor and model for TEXT prompts
+            self.processor = Sam3Processor.from_pretrained(model_id)
+            self.model = Sam3Model.from_pretrained(model_id)
             
             # Move to GPU if available
             self.model.to(self.device)
             self.model.eval()
             
-            print("[DefectAnalyzer] SAM-3 loaded successfully from HuggingFace!")
+            print("[DefectAnalyzer] SAM-3 (Text Prompt Mode) loaded successfully!")
             print(f"[DefectAnalyzer] Model on device: {next(self.model.parameters()).device}")
             
         except Exception as e:
@@ -183,13 +184,15 @@ class DefectAnalyzer:
         from PIL import Image as PILImage
         pil_image = PILImage.fromarray(image_rgb)
         
+        orig_h, orig_w = image.shape[:2]
+        
         # Detect defects with each text prompt
         for defect_type, prompt in self.defect_prompts.items():
             try:
-                # Prepare inputs with text prompt
+                # Prepare inputs with text prompt (based on reference project line 513-517)
                 inputs = self.processor(
-                    images=pil_image,
                     text=[prompt],  # Text prompt for zero-shot
+                    images=pil_image,
                     return_tensors="pt"
                 ).to(self.device)
                 
@@ -197,23 +200,44 @@ class DefectAnalyzer:
                 with torch.no_grad():
                     outputs = self.model(**inputs)
                 
-                # Get predicted masks and scores
-                masks = outputs.pred_masks.cpu().numpy()
-                scores = outputs.iou_scores.cpu().numpy()
+                # Post-process using processor's instance segmentation method
+                # (based on reference project line 567-572)
+                results = self.processor.post_process_instance_segmentation(
+                    outputs,
+                    threshold=self.confidence_threshold,
+                    mask_threshold=0.5,
+                    target_sizes=[[orig_h, orig_w]]
+                )[0]
                 
-                # Process each detected mask
-                if masks is not None and len(masks) > 0:
-                    for i, (mask, score) in enumerate(zip(masks[0], scores[0])):
-                        if score > self.confidence_threshold:
-                            # Convert mask to binary (0 or 1)
-                            mask_binary = (mask > 0.5).astype(np.uint8)
-                            
-                            defect = self._process_defect_mask(
-                                image, mask_binary, score, defect_type,
-                                img_filename, session_id
-                            )
-                            if defect is not None:
-                                defects.append(defect)
+                # Extract masks from results
+                if 'masks' in results and len(results['masks']) > 0:
+                    for mask in results['masks']:
+                        # Convert mask to numpy (based on reference line 597-610)
+                        if isinstance(mask, torch.Tensor):
+                            mask_np = mask.cpu().numpy()
+                        else:
+                            mask_np = np.array(mask)
+                        
+                        # Normalize to uint8 0-255
+                        if mask_np.dtype == bool:
+                            mask_uint8 = (mask_np.astype(np.uint8)) * 255
+                        elif mask_np.max() <= 1.0:
+                            mask_uint8 = (mask_np * 255).astype(np.uint8)
+                        else:
+                            mask_uint8 = mask_np.astype(np.uint8)
+                        
+                        # Get confidence score from IoU if available
+                        score = self.confidence_threshold  # Default
+                        if hasattr(outputs, 'iou_scores') and len(outputs.iou_scores) > 0:
+                            score = float(outputs.iou_scores.max())
+                        
+                        # Process defect mask
+                        defect = self._process_defect_mask(
+                            image, mask_uint8, score, defect_type,
+                            img_filename, session_id
+                        )
+                        if defect is not None:
+                            defects.append(defect)
                         
             except Exception as e:
                 print(f"[DefectAnalyzer] Error detecting {defect_type}: {e}")

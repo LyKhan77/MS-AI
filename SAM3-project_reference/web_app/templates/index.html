@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI CV Dashboard | GSPE</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#003473',
+                        secondary: '#F3F4F6',
+                        success: '#86EFAC', // Light green for Approved
+                        danger: '#FECACA', // Light red for Alert
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8F9FA; }
+
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #003473;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #003473;
+        }
+
+        /* Custom Scrollbar for description */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        /* Loader Animation */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #003473;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Fix for panel heights */
+        .panel-fix {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Ensure consistent panel styling */
+        .dashboard-panel {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Grid layout fixes */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .left-column {
+            grid-column: span 12 / span 12;
+        }
+        .right-column {
+            grid-column: span 12 / span 12;
+        }
+
+        @media (min-width: 1024px) {
+            .left-column {
+                grid-column: span 8 / span 8;
+            }
+            .right-column {
+                grid-column: span 4 / span 4;
+            }
+        }
+
+        /* Dropdown scrollbar and positioning fixes */
+        #object-suggestions {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        #object-suggestions::-webkit-scrollbar {
+            width: 6px;
+        }
+        #object-suggestions::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        #object-suggestions::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        #object-suggestions::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Prevent dropdown overflow */
+        .prompt-input-wrapper {
+            position: relative;
+            overflow: visible;
+        }
+
+        /* Input panel styles */
+        .input-panel {
+            transition: all 0.3s ease;
+        }
+
+        .input-panel.hidden {
+            display: none;
+        }
+
+        /* Modern Radio Button Styles */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* Radio button container */
+        .group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Add spacing between radio buttons */
+        }
+
+        /* Radio button background */
+        .group .w-6 {
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            cursor: pointer;
+            transition: all 200ms;
+            position: relative;
+        }
+
+        /* Radio button checked state */
+        .peer:checked ~ .w-6 {
+            border-color: #003473;
+            background-color: #003473;
+        }
+
+        /* Radio button white circle inside */
+        .group .absolute {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background-color: white;
+            transition: all 200ms;
+        }
+
+        /* Radio button checked - move white circle to right */
+        .peer:checked ~ .w-6 .absolute {
+            transform: translate(150%, -50%);
+        }
+
+        /* Label text styling */
+        .group-hover\:text-gray-900:hover {
+            color: #111827;
+        }
+
+        .peer-checked\:text-primary:checked ~ span {
+            color: #003473;
+            font-weight: 500;
+        }
+
+        /* Video controls styling */
+        .video-controls {
+            background-color: #f3f4f6;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .video-seek-slider {
+            width: 100%;
+            height: 4px;
+        }
+    </style>
+</head>
+<body class="text-gray-700 flex flex-col min-h-screen">
+
+    <!-- ================= HEADER ================= -->
+    <header class="bg-white border-b border-gray-200 shadow-sm z-10 shrink-0">
+        <div class="max-w-[1920px] mx-auto px-6 h-16 flex items-center justify-between">
+            <!-- Left: Logo -->
+            <div class="flex items-center gap-3">
+                <img src="/static/logo.png" alt="GSPE Logo" class="h-20 w-auto">
+                <div class="flex flex-col">
+                    <span class="font-bold text-gray-800 text-sm">GRAHASUMBER PRIMA ELEKTRONIK</span>
+                    <span class="text-[10px] text-gray-500 tracking-widest">POWER IT</span>
+                </div>
+            </div>
+
+            <!-- Center: Title -->
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold text-primary">Dashboard</h1>
+                <span class="text-2xl font-medium text-gray-400">|</span>
+                <h2 class="text-2xl font-semibold text-gray-600">Prototype CV</h2>
+            </div>
+
+            <!-- Right: Date/Time -->
+            <div class="text-right">
+                <div id="clock-time" class="text-lg font-bold text-gray-700 leading-tight">12:00 PM</div>
+                <div id="clock-date" class="text-xs text-gray-400">Monday, 25 Nov 2024</div>
+            </div>
+        </div>
+    </header>
+
+        <!-- Dashboard Grid: 3 Columns -->
+        <div class="p-4 lg:p-6 pb-20 flex-1 w-full">
+            <div class="max-w-[1920px] mx-auto grid grid-cols-12 gap-6">
+
+                <!-- COLUMN 1: CONTROLS (Span 3) -->
+                <div class="col-span-12 lg:col-span-3 flex flex-col gap-6">
+                    
+                    <!-- Prompt Panel -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <div class="flex items-center gap-2 mb-3">
+                            <h3 class="text-xl font-bold text-primary">Prompt</h3>
+                            <button onclick="openHelpModal()" class="text-gray-400 hover:text-primary transition-colors text-sm" title="How to prompt?">
+                                <i class="fa-regular fa-circle-question"></i>
+                            </button>
+                        </div>
+
+                        <!-- Prompt Input -->
+                        <div class="flex flex-col gap-3">
+                            <div class="prompt-input-wrapper relative">
+                                <input type="text" id="prompt-input"
+                                    class="w-full h-12 border border-gray-300 rounded-lg px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-700"
+                                    placeholder="{Object Name} or type..." autocomplete="off">
+                                
+                                <!-- Dropdown Toggle -->
+                                <button type="button" id="dropdown-toggle" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </button>
+                                
+                                <!-- Suggestions (Existing Code Structure) -->
+                                <div id="object-suggestions" class="hidden absolute z-50 bg-white border border-gray-200 rounded-lg shadow-xl mt-1 w-full">
+                                    <!-- (Same content as before, simplified for brevity) -->
+                                    <div class="p-2">
+                                        <button class="suggestion-item w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm">person</button>
+                                        <button class="suggestion-item w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm">car</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="processPrompt()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-lg text-sm transition-colors border border-gray-300">
+                                Set Prompt
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Model Configuration Panel -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <div class="flex items-center gap-2 mb-4">
+                            <h3 class="text-xl font-bold text-primary">Model Config</h3>
+                            <button onclick="openModelHelpModal()" class="text-gray-400 hover:text-primary transition-colors text-sm" title="Configuration Guide">
+                                <i class="fa-regular fa-circle-question"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-6">
+                            
+                            <!-- Confidence -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Confidence: <span id="confidence-value" class="font-bold">50%</span></label>
+                                <input type="range" id="confidence-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                            </div>
+
+                            <!-- Mask Threshold -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Mask Threshold: <span id="mask-value" class="font-bold">50%</span></label>
+                                <input type="range" id="mask-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                            </div>
+
+                            <!-- Preset Configurations -->
+                            <div class="pt-2 border-t border-gray-100">
+                                <label class="block text-sm font-medium text-gray-600 mb-2">Quick Presets</label>
+                                <div class="flex gap-2">
+                                    <button onclick="applyPreset('quality')" class="flex-1 px-3 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors">
+                                        Quality
+                                    </button>
+                                    <button onclick="applyPreset('balanced')" class="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                                        Balanced
+                                    </button>
+                                    <button onclick="applyPreset('speed')" class="flex-1 px-3 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors">
+                                        Speed
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <strong>Quality:</strong> Best segmentation, smooth masks<br>
+                                    <strong>Balanced:</strong> Good quality + performance<br>
+                                    <strong>Speed:</strong> Faster processing, sharper masks
+                                </p>
+                            </div>
+
+                            <!-- Video Performance Options (Only visible in Video Mode) -->
+                            <div data-mode="video" class="pt-2 border-t border-gray-100 hidden">
+                                <label class="block text-sm font-medium text-gray-600 mb-2">
+                                    <i class="fa-solid fa-gauge-high text-orange-500 mr-1"></i> Performance Tuning
+                                </label>
+
+                                <!-- Processing Interval -->
+                                <div class="mb-4">
+                                    <label class="block text-xs text-gray-500 mb-1">
+                                        Processing Interval: <span id="interval-value" class="font-bold text-gray-700">Every 5 frames</span>
+                                    </label>
+                                    <input type="range" id="interval-slider" min="1" max="30" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                        <span>Real-time (1)</span>
+                                        <span>Low GPU (30)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Input Resolution -->
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-2">Input Resolution</label>
+                                    <div class="flex gap-2">
+                                        <button onclick="setResolution(1024)" id="res-1024" class="flex-1 px-2 py-1.5 text-xs font-medium text-white bg-primary rounded transition-colors">
+                                            1024px
+                                        </button>
+                                        <button onclick="setResolution(768)" id="res-768" class="flex-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-gray-200 hover:bg-gray-300 rounded transition-colors">
+                                            768px
+                                        </button>
+                                        <button onclick="setResolution(512)" id="res-512" class="flex-1 px-2 py-1.5 text-xs font-medium text-gray-600 bg-gray-200 hover:bg-gray-300 rounded transition-colors">
+                                            512px
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-1.5">
+                                        Lower = Faster (for RTX 3050/4GB GPU)
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Segmentation (Image Mode Only) -->
+                            <div id="interactive-seg-section" data-mode="image" class="pt-3 border-t border-gray-100 hidden">
+                                <!-- Enable Interactive Segmentation -->
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="text-sm font-medium text-gray-700">
+                                        <i class="fa-solid fa-hand-pointer mr-1 text-primary"></i>
+                                        Interactive Segmentation
+                                    </label>
+                                    <div class="relative inline-block w-10 align-middle select-none">
+                                        <input type="checkbox" id="interactive-seg-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:border-primary left-0 checked:left-5 transition-all duration-300"/>
+                                        <label for="interactive-seg-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                                    </div>
+                                </div>
+
+                                <!-- Point Type Selection (Radio Buttons) -->
+                                <div id="point-type-selection" class="flex gap-4 pl-6 hidden">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="point-type" value="positive" checked class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"/>
+                                        <span class="text-sm text-gray-700">
+                                            <i class="fa-solid fa-plus-circle text-green-600"></i> Positive
+                                        </span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="point-type" value="negative" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"/>
+                                        <span class="text-sm text-gray-700">
+                                            <i class="fa-solid fa-minus-circle text-red-600"></i> Negative
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Clicked Points Table (Image Mode Only) -->
+                            <div id="clicked-points-section" data-mode="image" class="hidden pt-3 border-t border-gray-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="text-sm font-semibold text-gray-700">
+                                        <i class="fa-solid fa-table mr-1 text-primary"></i>
+                                        Clicked Points
+                                    </h4>
+                                    <button onclick="clearAllPoints()" class="text-xs text-red-500 hover:text-red-700 font-medium">
+                                        <i class="fa-solid fa-trash"></i> Clear All
+                                    </button>
+                                </div>
+
+                                <div class="max-h-40 overflow-y-auto border border-gray-200 rounded">
+                                    <table class="w-full text-xs">
+                                        <thead class="bg-gray-100 sticky top-0">
+                                            <tr>
+                                                <th class="px-2 py-1 text-left">Obj ID</th>
+                                                <th class="px-2 py-1 text-left">Label</th>
+                                                <th class="px-2 py-1 text-right">X</th>
+                                                <th class="px-2 py-1 text-right">Y</th>
+                                                <th class="px-2 py-1 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="points-table-body" class="divide-y divide-gray-200">
+                                            <tr id="no-points-row">
+                                                <td colspan="5" class="px-2 py-3 text-center text-gray-400">
+                                                    No points clicked yet
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Object ID Selector -->
+                                <div class="mt-2 flex items-center gap-2">
+                                    <label class="text-xs text-gray-600">Current Object ID:</label>
+                                    <input type="number" id="current-obj-id" value="1" min="1" max="99"
+                                           class="w-16 px-2 py-1 text-xs border border-gray-300 rounded"/>
+                                    <button onclick="incrementObjId()" class="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded">
+                                        <i class="fa-solid fa-plus"></i> New Object
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons (Run/Clear) -->
+                            <div class="pt-4 border-t border-gray-100 flex flex-col gap-3 mt-auto">
+                                <button id="run-segmentation-btn" onclick="runSegmentation()" class="w-full bg-primary hover:bg-blue-800 text-white font-bold py-3 rounded-lg text-sm shadow-md transition-all flex justify-center items-center gap-2">
+                                    <i class="fa-solid fa-play"></i> Run Segmentation
+                                </button>
+                                <button id="clear-mask-btn" onclick="clearMask()" class="w-full bg-white hover:bg-red-50 text-red-500 font-bold py-3 rounded-lg text-sm border border-red-200 transition-all flex justify-center items-center gap-2">
+                                    <i class="fa-solid fa-trash"></i> Clear Mask
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 2: VISUALS (Span 6) -->
+                <div class="col-span-12 lg:col-span-6 flex flex-col gap-6">
+                    
+                    <!-- Input Mode Switcher -->
+                    <div class="bg-gray-200 rounded-full p-1 flex items-center justify-between shadow-sm">
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="input-mode" value="rtsp" class="peer sr-only" checked onclick="switchInputMode(this.value)">
+                            <div class="py-2 rounded-full text-sm font-medium text-gray-500 peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm transition-all">RTSP</div>
+                        </label>
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="input-mode" value="video" class="peer sr-only" onclick="switchInputMode(this.value)">
+                            <div class="py-2 rounded-full text-sm font-medium text-gray-500 peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm transition-all">Video</div>
+                        </label>
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="input-mode" value="image" class="peer sr-only" onclick="switchInputMode(this.value)">
+                            <div class="py-2 rounded-full text-sm font-medium text-gray-500 peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm transition-all">Image</div>
+                        </label>
+                    </div>
+
+                    <!-- Main Display Container -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col gap-4 relative flex-1 min-h-[500px]">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-bold text-primary">Main Container</h3>
+                            <!-- Help Input Button -->
+                            <button onclick="openInputHelpModal()" class="text-gray-400 hover:text-primary transition-colors" title="Input Guide">
+                                <i class="fa-regular fa-circle-question text-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Display Zone -->
+                        <div class="relative bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex-1 flex items-center justify-center overflow-hidden" id="display-zone">
+                            <input type="file" id="video-file" accept="video/*" class="hidden">
+                            <input type="file" id="image-file-input" accept="image/*" class="hidden">
+                            
+                            <div id="stream-placeholder" class="text-center pointer-events-none z-10">
+                                <i class="fa-regular fa-circle-play text-gray-400 text-6xl mb-4"></i>
+                                <p class="text-gray-400 font-medium">Select Input Mode</p>
+                            </div>
+
+                            <div id="live-indicator" class="hidden absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded animate-pulse z-20">LIVE</div>
+                            <img id="mock-video-feed" src="" class="hidden w-full h-full object-contain z-0 absolute inset-0">
+                            <!-- Marker Canvas Overlay (for interactive segmentation points) -->
+                            <canvas id="marker-canvas" class="hidden absolute inset-0 w-full h-full z-30 pointer-events-none"></canvas>
+                            <div id="upload-overlay" class="absolute inset-0 z-50 hidden cursor-pointer"></div>
+                        </div>
+
+                        <!-- Controls (RTSP/Video/Image Panels) -->
+                        <!-- RTSP -->
+                        <div id="rtsp-panel" class="input-panel">
+                            <div class="flex gap-2">
+                                <input type="text" id="rtsp-url-input" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="rtsp://...">
+                                <button onclick="setRtspUrl()" class="bg-primary text-white px-4 rounded-lg text-sm"><i class="fa-solid fa-play"></i></button>
+                                <button onclick="stopRtspStreaming()" class="bg-red-500 text-white px-4 rounded-lg text-sm"><i class="fa-solid fa-stop"></i></button>
+                            </div>
+                        </div>
+                        <!-- Video/Image Info -->
+                        <div id="video-panel" class="input-panel hidden">
+                            <div id="video-file-info" class="hidden flex justify-between items-center border border-gray-200 rounded p-2 bg-gray-50">
+                                <span id="video-filename" class="text-sm text-gray-600 truncate max-w-[200px]">-</span>
+                                <button onclick="clearVideo()" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-times"></i></button>
+                            </div>
+
+                            <!-- Batch Processing Progress Bar (Hidden by default) -->
+                            <div id="batch-progress-container" class="hidden mt-3 p-4 border border-blue-200 rounded bg-blue-50">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="loader w-4 h-4 border-blue-500 border-t-transparent"></div>
+                                    <span class="text-sm font-medium text-blue-700">Processing Video...</span>
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                    <div id="batch-progress-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+
+                                <!-- Progress Text + Cancel Button -->
+                                <div class="flex justify-between items-center mt-2 text-xs text-gray-600">
+                                    <span id="batch-progress-text">Frame 0 / 0 (0%)</span>
+                                    <button onclick="cancelBatchProcessing()" class="text-red-500 hover:text-red-700 font-medium">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Video Playback Controls -->
+                            <div id="video-playback-controls" class="hidden mt-3 p-3 border border-gray-200 rounded bg-white">
+                                <!-- Play/Pause Button -->
+                                <div class="flex items-center gap-3 mb-3">
+                                    <button id="play-pause-btn" onclick="toggleVideoPlayback()"
+                                            class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                                        <i id="play-pause-icon" class="fa-solid fa-play"></i>
+                                        <span id="play-pause-text">Play</span>
+                                    </button>
+
+                                    <!-- Frame Counter -->
+                                    <span id="frame-counter" class="text-sm text-gray-600">
+                                        0 / 0
+                                    </span>
+
+                                    <!-- FPS Display -->
+                                    <span id="video-fps" class="text-sm text-gray-500">
+                                        0 FPS
+                                    </span>
+                                </div>
+
+                                <!-- Seek Slider -->
+                                <div class="flex items-center gap-3">
+                                    <label class="text-sm text-gray-600 min-w-[40px]">Seek:</label>
+                                    <input type="range" id="video-seek" min="0" max="100" value="0"
+                                           onchange="seekVideo(this.value)"
+                                           class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="image-panel" class="input-panel hidden">
+                            <div id="image-file-info" class="hidden flex justify-between items-center border border-gray-200 rounded p-2 bg-gray-50">
+                                <span id="image-filename" class="text-sm text-gray-600 truncate max-w-[200px]">-</span>
+                                <button onclick="clearUploadedImage()" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-times"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detected Objects (Export) -->
+                    <div data-mode="image rtsp" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-bold text-primary">Detected Objects</h3>
+                            <button onclick="saveAndviewResults()" class="bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-1 rounded text-xs shadow-sm gap-2 flex items-center">
+                                <i class="fa-solid fa-floppy-disk"></i> Save & View
+                            </button>
+                        </div>
+                        <div id="object-list-container" class="grid grid-cols-4 gap-2 max-h-[150px] overflow-y-auto custom-scroll bg-gray-50 p-2 rounded border border-gray-100 min-h-[80px] items-center justify-center text-gray-400 text-xs">
+                            <p class="col-span-full text-center">No objects saved yet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 3: INFO (Span 3) -->
+                <div class="col-span-12 lg:col-span-3 flex flex-col gap-6">
+                    
+                    <!-- Description Panel (New Layout) -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <h3 class="text-xl font-bold text-primary mb-4">Status</h3>
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-100 space-y-3">
+                            <div>
+                                <span class="text-xs text-gray-400 uppercase tracking-wider font-bold">Prompt</span>
+                                <p id="desc-prompt" class="text-gray-800 font-medium break-words">-</p>
+                            </div>
+                            <div class="border-t border-gray-200 pt-2">
+                                <span class="text-xs text-gray-400 uppercase tracking-wider font-bold">System Status</span>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <div id="status-dot" class="w-2 h-2 rounded-full bg-gray-400"></div>
+                                    <p id="desc-status" class="text-gray-800 font-bold">Ready</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Video Panel (New) -->
+                    <div id="download-video-panel" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <h3 class="text-xl font-bold text-primary mb-4">Export</h3>
+                        <div class="bg-green-50 rounded-lg p-4 border border-green-100 text-center">
+                            <div class="mb-3">
+                                <i class="fa-solid fa-file-video text-4xl text-green-500"></i>
+                            </div>
+                            <p class="text-sm font-medium text-gray-800 mb-1">Processing Complete</p>
+                            <p class="text-xs text-gray-500 mb-4">Your segmented video is ready.</p>
+                            <button onclick="downloadProcessedVideo()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg text-sm shadow-sm transition-colors flex justify-center items-center gap-2">
+                                <i class="fa-solid fa-download"></i> Download Video
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Panel (Existing) -->
+                    <div data-mode="image rtsp" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col gap-4">
+                        <h3 class="text-xl font-bold text-primary">Summary</h3>
+                        
+                        <!-- Activate Sound -->
+                        <div class="border border-gray-200 rounded-lg p-3 flex justify-between items-center bg-gray-50">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-volume-high text-gray-500 text-sm"></i>
+                                <span class="text-sm font-medium text-gray-700">Sound Alert</span>
+                            </div>
+                            <div class="relative inline-block w-10 align-middle select-none">
+                                <input type="checkbox" id="sound-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:border-primary left-0 checked:left-5 transition-all duration-300"/>
+                                <label for="sound-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div class="border border-gray-200 rounded-lg p-3 flex justify-between items-center bg-gray-50">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-wave-square text-gray-500 text-sm"></i>
+                                <span class="text-sm font-medium text-gray-700">Result</span>
+                            </div>
+                            <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-200 text-blue-800 transition-colors">
+                                Waiting
+                            </span>
+                        </div>
+                        
+                        <!-- Max Limit -->
+                        <div class="border border-gray-200 rounded-lg p-3 flex justify-between items-center bg-gray-50">
+                            <span class="text-sm font-medium text-gray-600">Max Limit</span>
+                            <input type="number" id="max-limit" value="100" class="w-16 text-right border border-gray-300 rounded px-1 text-sm">
+                        </div>
+
+                        <!-- Total Detected -->
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-6 flex flex-col items-center justify-center mt-auto shadow-inner">
+                            <h4 class="text-sm font-medium text-gray-500">Total Detected</h4>
+                            <span id="detected-count" class="text-5xl font-black text-primary my-2">0</span>
+                            <div class="w-full bg-gray-300 rounded-full h-2 mt-2">
+                                <div id="progress-bar" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="progress-legend" class="text-[10px] text-gray-400 mt-1">{count}/{Limit}</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        
+        <!-- Footer -->
+        <footer class="mt-auto py-6 text-center text-gray-400 text-xs font-medium uppercase tracking-widest opacity-50 border-t border-gray-100">
+            &copy; GSPE
+        </footer>
+    </main>
+
+    <!-- Sound Effect (Hidden) -->
+    <audio id="notification-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <!-- (Content same as before) -->
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 transform scale-95 transition-transform duration-300" id="help-modal-content">
+            <!-- Header -->
+            <div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-100 p-2 rounded-lg text-primary">
+                        <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">How to Prompt SAM 3</h3>
+                </div>
+                <button onclick="closeHelpModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto max-h-[70vh]">
+                <div class="space-y-6">
+                    <!-- Section 1: Natural Language -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-primary mb-2">1. Natural Language & Attributes</h4>
+                        <p class="text-gray-600 text-sm mb-3">SAM 3 understands detailed descriptions. Use color, shape, and context to be specific.</p>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-xs font-bold text-green-600 uppercase">Good Examples</span>
+                                <ul class="list-disc list-inside text-sm text-gray-700 mt-1 space-y-1">
+                                    <li>"red car"</li>
+                                    <li>"person wearing white shirt"</li>
+                                    <li>"wooden chair next to the table"</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-red-500 uppercase">Too Vague</span>
+                                <ul class="list-disc list-inside text-sm text-gray-700 mt-1 space-y-1">
+                                    <li>"thing"</li>
+                                    <li>"object"</li>
+                                    <li>"stuff"</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Spatial Parts -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-primary mb-2">2. Spatial & Parts</h4>
+                        <p class="text-gray-600 text-sm mb-3">You can target specific parts of an object or locations.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-100">"wheel of the car"</span>
+                            <span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-100">"handle of the mug"</span>
+                            <span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-100">"left shoe"</span>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Point Prompting -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-primary mb-2">3. Point Selection</h4>
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 text-primary">
+                                <i class="fa-solid fa-mouse-pointer"></i>
+                            </div>
+                            <p class="text-gray-600 text-sm">
+                                Enable the <strong>"Click to Select Object"</strong> toggle in the configuration panel. 
+                                Then, simply click on any object in the video feed to instantly segment it without typing a prompt.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-xl flex justify-end">
+                <button onclick="closeHelpModal()" class="bg-primary hover:bg-blue-800 text-white font-bold px-6 py-2 rounded-lg text-sm transition-colors shadow-md">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Help Modal -->
+    <div id="input-help-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300" id="input-help-modal-content">
+            <!-- Header -->
+            <div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-purple-100 p-2 rounded-lg text-primary">
+                        <i class="fa-solid fa-photo-film text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Input Guide</h3>
+                </div>
+                <button onclick="closeInputHelpModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex gap-4">
+                        <div class="flex-1 bg-gray-50 p-3 rounded border border-gray-200 text-center">
+                            <i class="fa-solid fa-image text-2xl text-blue-500 mb-2"></i>
+                            <h4 class="font-bold text-gray-700">Images</h4>
+                            <p class="text-xs text-gray-500 mt-1">JPG, PNG, WEBP</p>
+                            <p class="text-xs text-gray-500">Max 4K Resolution</p>
+                        </div>
+                        <div class="flex-1 bg-gray-50 p-3 rounded border border-gray-200 text-center">
+                            <i class="fa-solid fa-video text-2xl text-purple-500 mb-2"></i>
+                            <h4 class="font-bold text-gray-700">Videos</h4>
+                            <p class="text-xs text-gray-500 mt-1">MP4, AVI, MOV</p>
+                            <p class="text-xs text-gray-500">Short clips recommended</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                        <h4 class="font-bold text-blue-800 text-sm mb-2"><i class="fa-solid fa-lightbulb mr-2"></i>Best Practices</h4>
+                        <ul class="list-disc list-inside text-sm text-blue-700 space-y-1">
+                            <li>Use high-resolution media (1080p+) for better detail.</li>
+                            <li>Ensure good lighting and clear contrast.</li>
+                            <li>Avoid heavy motion blur in videos.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-xl flex justify-end">
+                <button onclick="closeInputHelpModal()" class="bg-primary hover:bg-blue-800 text-white font-bold px-6 py-2 rounded-lg text-sm transition-colors shadow-md">
+                    Understood
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Config Help Modal -->
+    <div id="model-help-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 transform scale-95 transition-transform duration-300" id="model-help-modal-content">
+            <!-- Header -->
+            <div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-green-100 p-2 rounded-lg text-green-600">
+                        <i class="fa-solid fa-sliders text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Configuration Guide</h3>
+                </div>
+                <button onclick="closeModelHelpModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 space-y-6">
+                
+                <!-- Confidence -->
+                <div>
+                    <h4 class="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <span class="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded">Confidence Threshold</span>
+                    </h4>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        Determines how sure the AI needs to be before accepting a detection.
+                    </p>
+                    <ul class="mt-2 text-xs text-gray-500 list-disc list-inside">
+                        <li><strong>High (>70%):</strong> Fewer detections, but very accurate.</li>
+                        <li><strong>Low (<30%):</strong> More detections, but may include background noise.</li>
+                        <li><span class="text-orange-500">Tip:</span> If you see "Done" status but no masks, try lowering this to 20-30%.</li>
+                    </ul>
+                </div>
+
+                <!-- Mask Threshold -->
+                <div>
+                    <h4 class="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <span class="bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded">Mask Threshold</span>
+                    </h4>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        Controls the "strictness" of the object boundaries.
+                    </p>
+                    <ul class="mt-2 text-xs text-gray-500 list-disc list-inside">
+                        <li><strong>High:</strong> Tighter masks, might miss thin parts (limbs, poles).</li>
+                        <li><strong>Low:</strong> Fuller masks, might spill over slightly.</li>
+                    </ul>
+                </div>
+
+                <!-- Video Performance (Video Mode Only) -->
+                <div data-mode="video" class="bg-orange-50 border border-orange-100 rounded-lg p-3 hidden">
+                    <h4 class="font-bold text-gray-800 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-gauge-high text-orange-500"></i>
+                        <span class="text-sm font-semibold">Video Performance</span>
+                    </h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <p class="text-xs font-bold text-gray-700 mb-1">Processing Interval</p>
+                            <p class="text-xs text-gray-600 leading-snug">
+                                Skip frames to speed up processing.
+                                <br>&bull; <strong class="text-orange-600">Low (1-5):</strong> Smooth, high GPU usage.
+                                <br>&bull; <strong class="text-green-600">High (10+):</strong> Fast, slightly choppy mask.
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-700 mb-1">Input Resolution</p>
+                            <p class="text-xs text-gray-600 leading-snug">
+                                Resize video before AI processing.
+                                <br>&bull; <strong class="text-orange-600">1024px:</strong> High detail, slower.
+                                <br>&bull; <strong class="text-green-600">512px:</strong> Max speed, less detail.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- General Advice -->
+                <div class="bg-yellow-50 border border-yellow-100 rounded-lg p-3 flex gap-3 items-start">
+                    <i class="fa-solid fa-lightbulb text-yellow-500 mt-1"></i>
+                    <p class="text-xs text-yellow-700">
+                        Start with defaults (50%). If the object is complex or lighting is poor, lower the Confidence first.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-xl flex justify-end">
+                <button onclick="closeModelHelpModal()" class="bg-primary hover:bg-blue-800 text-white font-bold px-6 py-2 rounded-lg text-sm transition-colors shadow-md">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 z-[150] transform transition-all duration-300 translate-y-20 opacity-0">
+        <div id="toast-border" class="bg-white border-l-4 border-yellow-500 shadow-xl rounded-lg p-4 flex items-start gap-3 max-w-sm">
+            <div id="toast-icon" class="text-yellow-500 mt-0.5">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h4 id="toast-title" class="font-bold text-gray-800 text-sm">Notification</h4>
+                <p id="toast-message" class="text-xs text-gray-600 mt-1">
+                    Message content...
+                </p>
+            </div>
+            <button onclick="hideToast()" class="text-gray-400 hover:text-gray-600 ml-auto">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= BACKEND LOGIC MOCKUP ================= -->
+    <script src="/static/app.js" defer></script>
+</body>
+</html>
