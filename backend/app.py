@@ -263,6 +263,144 @@ def stop_camera():
     print("Camera stopped successfully")
     return jsonify({"status": "stopped"})
 
+
+# ============================================================
+# Defect Analysis Endpoints (SAM-3)
+# ============================================================
+
+@app.route('/api/sessions/<session_id>/analyze_defects', methods=['POST'])
+def analyze_session_defects(session_id):
+    """
+    Run SAM-3 defect analysis on all captures from a session
+    
+    POST /api/sessions/<session_id>/analyze_defects
+    
+    Response:
+        {
+            'status': 'completed' | 'error',
+            'results': {...}
+        }
+    """
+    from core.defect_analyzer import get_defect_analyzer
+    
+    # Get session
+    session = db.get_session_by_id(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+    
+    # Get captures directory
+    captures_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'captures')
+    if not os.path.exists(captures_dir):
+        return jsonify({'error': 'No captures found'}), 404
+    
+    try:
+        # Get analyzer instance
+        analyzer = get_defect_analyzer()
+        
+        # Run analysis
+        print(f"[API] Starting defect analysis for session {session_id}...")
+        results = analyzer.analyze_session_captures(session_id, captures_dir)
+        
+        # Save results to database
+        db.save_defect_analysis(session_id, results)
+        
+        print(f"[API] Analysis complete! Found {results['defects_found']} defects")
+        
+        return jsonify({
+            'status': 'completed',
+            'results': results
+        }), 200
+        
+    except Exception as e:
+        print(f"[API] Error during analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/sessions/<session_id>/defects', methods=['GET'])
+def get_session_defects(session_id):
+    """
+    Get all defects found in a session
+    
+    GET /api/sessions/<session_id>/defects
+    
+    Response:
+        {
+            'defects': [...],
+            'stats_by_type': {...},
+            'stats_by_severity': {...}
+        }
+    """
+    defects = db.get_session_defects(session_id)
+    stats_by_type = db.get_defect_stats_by_type(session_id)
+    stats_by_severity = db.get_defect_stats_by_severity(session_id)
+    
+    return jsonify({
+        'defects': defects,
+        'stats_by_type': stats_by_type,
+        'stats_by_severity': stats_by_severity
+    }), 200
+
+
+@app.route('/api/sessions/<session_id>/defects/export', methods=['GET'])
+def export_session_defects(session_id):
+    """
+    Export all defect crops as ZIP file
+    
+    GET /api/sessions/<session_id>/defects/export
+    
+    Returns:
+        ZIP file download
+    """
+    from flask import send_file
+    import zipfile
+    from io import BytesIO
+    
+    defects_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'defects')
+    
+    if not os.path.exists(defects_dir):
+        return jsonify({'error': 'No defects found'}), 404
+    
+    # Create ZIP in memory
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for filename in os.listdir(defects_dir):
+            file_path = os.path.join(defects_dir, filename)
+            if os.path.isfile(file_path):
+                zip_file.write(file_path, filename)
+    
+    zip_buffer.seek(0)
+    
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=f'session_{session_id}_defects.zip'
+    )
+
+
+@app.route('/api/sessions/<session_id>/defects/<filename>', methods=['GET'])
+def get_defect_crop(session_id, filename):
+    """
+    Serve defect crop image
+    
+    GET /api/sessions/<session_id>/defects/<filename>
+    """
+    from flask import send_from_directory
+    
+    defects_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'defects')
+    return send_from_directory(defects_dir, filename)
+
+
+# ============================================================
+# Socket.IO Handlers
+# ============================================================
+
+
 @socketio.on('connect')
 def handle_connect(auth=None):
     print('Client connected')

@@ -184,3 +184,70 @@ class Database:
             shutil.rmtree(session_dir)
         
         return {"status": "deleted", "session_id": session_id}
+    
+    def save_defect_analysis(self, session_id, results):
+        """
+        Save defect analysis results to session
+        
+        Args:
+            session_id: Session ID
+            results: Analysis results from DefectAnalyzer
+        """
+        db = self._load_db()
+        
+        # Update session with defect stats
+        for session in db['sessions']:
+            if session['id'] == session_id:
+                session['defects_analyzed'] = results.get('total_images', 0)
+                session['defects_found'] = results.get('defects_found', 0)
+                session['analysis_time'] = results.get('processing_time', 0)
+                session['defects_data'] = results.get('defects', [])
+                break
+        
+        self._save_db(db)
+        
+        print(f"[Database] Saved {results.get('defects_found', 0)} defects for session {session_id}")
+    
+    def get_session_defects(self, session_id):
+        """
+        Get defect analysis results for a session
+        
+        Returns:
+            defects: List of defect dictionaries
+        """
+        session = self.get_session_by_id(session_id)
+        if session and 'defects_data' in session:
+            return session['defects_data']
+        return []
+    
+    def get_defect_stats_by_type(self, session_id):
+        """
+        Get defect statistics grouped by type
+        
+        Returns:
+            stats: {defect_type: count}
+        """
+        defects = self.get_session_defects(session_id)
+        
+        stats = {}
+        for defect in defects:
+            dtype = defect.get('defect_type', 'unknown')
+            stats[dtype] = stats.get(dtype, 0) + 1
+        
+        return stats
+    
+    def get_defect_stats_by_severity(self, session_id):
+        """
+        Get defect statistics grouped by severity
+        
+        Returns:
+            stats: {severity: count}
+        """
+        defects = self.get_session_defects(session_id)
+        
+        stats = {'minor': 0, 'moderate': 0, 'critical': 0}
+        for defect in defects:
+            severity = defect.get('severity', 'minor')
+            stats[severity] = stats.get(severity, 0) + 1
+        
+        return stats
