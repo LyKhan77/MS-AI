@@ -131,7 +131,7 @@ class Sort:
         trks = np.zeros((len(self.trackers), 5))
         to_del = []
         for t, trk in enumerate(trks):
-            pos = self.trackers[t].predict()[0]
+            pos = self.trackers[t].predict()  # Returns array directly
             trk[:] = [pos[0], pos[1], pos[2], pos[3], 0]
             if np.any(np.isnan(pos)):
                 to_del.append(t)
@@ -157,7 +157,7 @@ class Sort:
         # Return tracked objects that meet criteria
         ret = []
         for trk in self.trackers:
-            d = trk.get_state()[0]
+            d = trk.get_state()  # Returns array directly
             if (trk.time_since_update < 1) and (
                 trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits
             ):
