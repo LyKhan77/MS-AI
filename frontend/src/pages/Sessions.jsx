@@ -104,45 +104,45 @@ const Sessions = () => {
   };
 
   return (
-    <div className="p-8 pb-12 h-full flex flex-col gap-8 overflow-y-auto">
+    <div className="p-4 md:p-8 pb-12 h-full flex flex-col gap-6 md:gap-8 overflow-y-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Sessions History</h1>
-        <p className="text-gray-400">View and analyze past production sessions</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-white">Sessions History</h1>
+        <p className="text-sm md:text-base text-gray-400">View and analyze past production sessions</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white/5 border border-white/10 p-4 rounded-lg backdrop-blur-sm">
-          <div className="text-gray-400 text-sm">Total Sessions</div>
-          <div className="text-3xl font-bold text-white mt-1">{stats.total_sessions}</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="bg-white/5 border border-white/10 p-3 md:p-4 rounded-lg backdrop-blur-sm">
+          <div className="text-gray-400 text-xs md:text-sm">Total Sessions</div>
+          <div className="text-2xl md:text-3xl font-bold text-white mt-1">{stats.total_sessions}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 p-4 rounded-lg backdrop-blur-sm">
-          <div className="text-gray-400 text-sm">Total Count</div>
-          <div className="text-3xl font-bold text-white mt-1">{stats.total_count}</div>
+        <div className="bg-white/5 border border-white/10 p-3 md:p-4 rounded-lg backdrop-blur-sm">
+          <div className="text-gray-400 text-xs md:text-sm">Total Count</div>
+          <div className="text-2xl md:text-3xl font-bold text-white mt-1">{stats.total_count}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 p-4 rounded-lg backdrop-blur-sm">
-          <div className="text-gray-400 text-sm">Average Count</div>
-          <div className="text-3xl font-bold text-white mt-1">{stats.avg_count}</div>
+        <div className="bg-white/5 border border-white/10 p-3 md:p-4 rounded-lg backdrop-blur-sm">
+          <div className="text-gray-400 text-xs md:text-sm">Avg Count</div>
+          <div className="text-2xl md:text-3xl font-bold text-white mt-1">{stats.avg_count}</div>
         </div>
-        <div className="bg-white/5 border border-white/10 p-4 rounded-lg backdrop-blur-sm">
-          <div className="text-gray-400 text-sm">Today</div>
-          <div className="text-3xl font-bold text-white mt-1">{stats.sessions_today}</div>
+        <div className="bg-white/5 border border-white/10 p-3 md:p-4 rounded-lg backdrop-blur-sm">
+          <div className="text-gray-400 text-xs md:text-sm">Today</div>
+          <div className="text-2xl md:text-3xl font-bold text-white mt-1">{stats.sessions_today}</div>
         </div>
       </div>
 
       {/* Sessions Table */}
       <div className="bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm overflow-hidden flex-1 flex flex-col">
-        <div className="overflow-x-auto flex-1">
-          <table className="w-full">
+        <div className="overflow-x-auto flex-1 scrollbar-thin scrollbar-thumb-white/10">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-white/5 border-b border-white/10">
               <tr>
-                <th className="text-left p-4 text-gray-300 font-semibold">Session Name</th>
-                <th className="text-left p-4 text-gray-300 font-semibold">Date</th>
-                <th className="text-left p-4 text-gray-300 font-semibold">Count</th>
-                <th className="text-left p-4 text-gray-300 font-semibold">Duration</th>
-                <th className="text-left p-4 text-gray-300 font-semibold">Status</th>
-                <th className="text-left p-4 text-gray-300 font-semibold">Actions</th>
+                <th className="text-left p-3 md:p-4 text-gray-300 font-semibold text-sm md:text-base">Session Name</th>
+                <th className="text-left p-3 md:p-4 text-gray-300 font-semibold text-sm md:text-base">Date</th>
+                <th className="text-left p-3 md:p-4 text-gray-300 font-semibold text-sm md:text-base">Count</th>
+                <th className="text-left p-3 md:p-4 text-gray-300 font-semibold text-sm md:text-base">Duration</th>
+                <th className="text-left p-3 md:p-4 text-gray-300 font-semibold text-sm md:text-base">Status</th>
+                <th className="text-left p-3 md:p-4 text-gray-300 font-semibold text-sm md:text-base">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -269,13 +269,13 @@ const SessionDetailModal = ({ session, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a2e] border border-white/20 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-[#1a1a2e] border-t sm:border border-white/20 rounded-t-2xl sm:rounded-xl w-full sm:max-w-4xl max-h-[90vh] h-full sm:h-auto overflow-hidden flex flex-col animate-slide-up sm:animate-fade-in">
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+        <div className="p-4 md:p-6 border-b border-white/10 flex justify-between items-center bg-[#1a1a2e] sticky top-0 z-10">
           <div>
-            <h2 className="text-2xl font-bold text-white">{session.name}</h2>
-            <p className="text-gray-400 text-sm mt-1">Session ID: {session.id}</p>
+            <h2 className="text-xl md:text-2xl font-bold text-white">{session.name}</h2>
+            <p className="text-gray-400 text-xs md:text-sm mt-1">Session ID: {session.id}</p>
           </div>
           <button
             onClick={onClose}

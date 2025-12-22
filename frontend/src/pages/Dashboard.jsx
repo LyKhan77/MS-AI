@@ -222,15 +222,15 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-8 pb-12 h-full flex flex-col gap-8 overflow-y-auto">
+    <div className="p-4 md:p-8 pb-12 h-full flex flex-col gap-6 md:gap-8 overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Production Dashboard</h1>
-          <p className="text-gray-400">Real-time Metal Sheet Counting & QC</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Production Dashboard</h1>
+          <p className="text-sm md:text-base text-gray-400">Real-time Metal Sheet Counting & QC</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className={`px-4 py-2 rounded-full font-bold ${isSessionActive ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-gray-800 text-gray-500'}`}>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className={`flex-1 md:flex-none text-center px-4 py-2 rounded-full font-bold text-xs md:text-sm ${isSessionActive ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-gray-800 text-gray-500'}`}>
             {isSessionActive ? 'SESSION ACTIVE' : 'IDLE'}
           </div>
           <button
@@ -256,30 +256,32 @@ const Dashboard = () => {
           
           {/* Source Controls */}
           <div className="bg-white/5 border border-white/10 p-4 rounded-lg backdrop-blur-sm space-y-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <span className="text-sm font-medium text-gray-300">Input Mode:</span>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="inputMode" 
-                  value="rtsp"
-                  checked={sourceInput.mode === 'rtsp'}
-                  onChange={() => setSourceInput({...sourceInput, mode: 'rtsp'})}
-                  className="w-4 h-4 text-primary"
-                />
-                <span className="text-sm text-white">RTSP Stream</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="inputMode" 
-                  value="upload"
-                  checked={sourceInput.mode === 'upload'}
-                  onChange={() => setSourceInput({...sourceInput, mode: 'upload'})}
-                  className="w-4 h-4 text-primary"
-                />
-                <span className="text-sm text-white">Upload Video</span>
-              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="inputMode" 
+                    value="rtsp"
+                    checked={sourceInput.mode === 'rtsp'}
+                    onChange={() => setSourceInput({...sourceInput, mode: 'rtsp'})}
+                    className="w-4 h-4 text-primary"
+                  />
+                  <span className="text-sm text-white">RTSP Stream</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="inputMode" 
+                    value="upload"
+                    checked={sourceInput.mode === 'upload'}
+                    onChange={() => setSourceInput({...sourceInput, mode: 'upload'})}
+                    className="w-4 h-4 text-primary"
+                  />
+                  <span className="text-sm text-white">Upload Video</span>
+                </label>
+              </div>
             </div>
 
             {sourceInput.mode === 'rtsp' ? (
@@ -307,16 +309,16 @@ const Dashboard = () => {
                       type="file" 
                       accept="video/*"
                       onChange={handleFileUpload}
-                      className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-secondary file:cursor-pointer"
+                      className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs md:text-sm file:bg-primary file:text-white hover:file:bg-secondary file:cursor-pointer w-full"
                     />
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 p-3 bg-black/20 rounded border border-white/5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary shrink-0"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 11 2 2 4-4"/></svg>
-                    <span className="flex-1 text-sm text-white truncate">{uploadedFile}</span>
+                    <span className="flex-1 text-sm text-white truncate min-w-0">{uploadedFile}</span>
                     <button 
                       onClick={handleRemoveFile}
-                      className="p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                      className="p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors shrink-0"
                       title="Remove video"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
