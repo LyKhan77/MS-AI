@@ -147,7 +147,7 @@ class Database:
         today = datetime.now().date()
         sessions_today = sum(
             1 for s in sessions 
-            if datetime.fromisoformat(s['start_time']).date() == today
+            if 'start_time' in s and datetime.fromisoformat(s['start_time']).date() == today
         )
         
         # Completed vs active

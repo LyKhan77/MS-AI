@@ -80,6 +80,29 @@ const Sessions = () => {
     });
   };
 
+  const handleDelete = async (sessionId) => {
+    if (!confirm('Are you sure you want to delete this session? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Refresh sessions list and stats
+        await fetchSessions();
+        await fetchStats();
+      } else {
+        alert('Failed to delete session');
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+      alert('Error deleting session');
+    }
+  };
+
   return (
     <div className="p-8 pb-12 h-full flex flex-col gap-8 overflow-y-auto">
       {/* Header */}
