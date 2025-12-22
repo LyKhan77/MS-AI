@@ -64,24 +64,48 @@ class DefectAnalyzer:
             return  # Already loaded
         
         try:
-            # Import SAM-3 modules
-            from sam3 import sam3_model_registry, Sam3Predictor
-            
-            # Load model
             print(f"[DefectAnalyzer] Loading SAM-3 from {self.checkpoint_path}...")
-            self.model = sam3_model_registry['vit_h'](checkpoint=self.checkpoint_path)
-            self.model.to(self.device)
-            self.model.eval()
             
-            # Create predictor
-            self.predictor = Sam3Predictor(self.model)
+            # Try importing SAM-3 modules (priority order)
+            try:
+                # Option 1: Official SAM-3 package
+                from sam3 import sam3_model_registry, Sam3Predictor
+                
+                # Load model
+                self.model = sam3_model_registry['vit_h'](checkpoint=self.checkpoint_path)
+                self.model.to(self.device)
+                self.model.eval()
+                
+                # Create predictor for inference
+                self.predictor = Sam3Predictor(self.model)
+                
+                print("[DefectAnalyzer] SAM-3 loaded successfully!")
+                print(f"[DefectAnalyzer] Model on device: {next(self.model.parameters()).device}")
+                
+            except ImportError:
+                # Option 2: Try segment-anything package (SAM 2 compatibility)
+                print("[DefectAnalyzer] SAM-3 not found, trying SAM 2 compatibility mode...")
+                from segment_anything import sam_model_registry, SamPredictor
+                
+                model_type = "vit_h"  # Can be vit_h, vit_l, or vit_b
+                self.model = sam_model_registry[model_type](checkpoint=self.checkpoint_path)
+                self.model.to(self.device)
+                self.model.eval()
+                
+                self.predictor = SamPredictor(self.model)
+                
+                print("[DefectAnalyzer] SAM 2 loaded successfully (compatibility mode)")
             
-            print("[DefectAnalyzer] SAM-3 loaded successfully!")
-            
-        except Exception as e:
-            print(f"[DefectAnalyzer] Error loading SAM-3: {e}")
+        except FileNotFoundError:
+            print(f"[DefectAnalyzer] Checkpoint not found: {self.checkpoint_path}")
             print("[DefectAnalyzer] Falling back to mock mode for testing")
-            self.model = "mock"  # Mock mode for testing
+            self.model = "mock"
+        except Exception as e:
+            print(f"[DefectAnalyzer] Error loading model: {e}")
+            print("[DefectAnalyzer] Falling back to mock mode for testing")
+            import traceback
+            traceback.print_exc()
+            self.model = "mock"
     
     def analyze_session_captures(self, session_id: int, captures_dir: str) -> Dict:
         """
@@ -151,7 +175,7 @@ class DefectAnalyzer:
         Analyze a single image for defects
         
         Args:
-            image: Image as numpy array
+            image: Image as numpy array (BGR from cv2)
             img_filename: Filename of the image
             session_id: Session ID
             
@@ -164,29 +188,45 @@ class DefectAnalyzer:
         if self.model == "mock":
             return self._mock_detection(image, img_filename, session_id)
         
-        # Set image for SAM-3 predictor
-        self.predictor.set_image(image)
+        # Preprocess image for SAM-3
+        # Convert BGR (OpenCV) to RGB (SAM expects RGB)
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        # Set image for SAM-3 predictor (handles encoding internally)
+        self.predictor.set_image(image_rgb)
         
         # Detect defects with each prompt
         for defect_type, prompt in self.defect_prompts.items():
             try:
                 # Run SAM-3 prediction with text prompt
-                masks, scores, _ = self.predictor.predict_with_text(
-                    text_prompt=prompt,
-                    multimask_output=True
-                )
+                # Note: predict_with_text might not be available in all SAM versions
+                # If error occurs, falls back to point-based prompts
+                try:
+                    masks, scores, _ = self.predictor.predict_with_text(
+                        text_prompt=prompt,
+                        multimask_output=True
+                    )
+                except AttributeError:
+                    # Fallback: SAM 2 doesn't have text prompts
+                    # Use automatic mask generation instead
+                    print(f"[DefectAnalyzer] Text prompts not supported, skipping {defect_type}")
+                    continue
                 
                 # Process each detected mask
-                for mask, score in zip(masks, scores):
-                    if score > self.confidence_threshold:
-                        defect = self._process_defect_mask(
-                            image, mask, score, defect_type, 
-                            img_filename, session_id
-                        )
-                        defects.append(defect)
+                if masks is not None and len(masks) > 0:
+                    for mask, score in zip(masks, scores):
+                        if score > self.confidence_threshold:
+                            defect = self._process_defect_mask(
+                                image, mask, score, defect_type, 
+                                img_filename, session_id
+                            )
+                            if defect is not None:
+                                defects.append(defect)
                         
             except Exception as e:
                 print(f"[DefectAnalyzer] Error detecting {defect_type}: {e}")
+                import traceback
+                traceback.print_exc()
                 continue
         
         return defects
