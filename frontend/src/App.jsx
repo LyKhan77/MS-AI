@@ -2,22 +2,38 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Sessions from './pages/Sessions';
+import Dimensions from './pages/Dimensions';
 
-// Placeholder Pages for Menu
+// Placeholder Page
 const Defects = () => <div className="p-8 text-white">Defect Analysis Page (Coming Soon in Phase 2)</div>;
-const Dimension = () => <div className="p-8 text-white">Dimension Measurement Page (Coming Soon in Phase 3)</div>;
 
 function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
 
   return (
     <div className="flex h-screen w-full bg-[#0f172a] overflow-hidden font-sans">
+        {/* Mobile overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 lg:hidden z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <aside 
-          className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-[#001e45] text-white flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative`}
+          className={`
+            fixed lg:relative inset-y-0 left-0 z-50
+            ${ isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+            lg:translate-x-0
+            transition-transform duration-300
+            ${isSidebarOpen ? 'w-64' : 'w-20'}
+            bg-[#001e45] text-white flex flex-col border-r border-white/5
+          `}
         >
           {/* Header & Logo */}
           <div className="p-4 border-b border-white/5 flex items-center justify-center">
@@ -80,17 +96,44 @@ function AppContent() {
           </div>
         </aside>
 
-        {/* Floating Toggle Button */}
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`fixed top-4 ${isSidebarOpen ? 'left-60' : 'left-16'} z-50 p-2 rounded-md bg-[#003473] hover:bg-[#004a99] text-white shadow-lg transition-all duration-300`}
-          title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+          {/* Sidebar Toggle Button */}
+          <div className="p-3 border-b border-white/5 flex justify-between items-center">
+            {/* Mobile Menu Toggle (visible on mobile) */}
+            <button
+              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              title="Toggle Menu"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+            
+            {/* Desktop Toggle */}
+            <button
+              className="hidden lg:block p-2 hover:bg-white/10 rounded-lg transition-colors ml-auto"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              title={isSidebarOpen ? 'Collapse' : 'Expand'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+                <path d="M18 15l-6-6-6 6"/>
+              </svg>
+            </button>
+          </div>
+
+        {/* Mobile Menu Toggle Button - Floating */}
+        <button
+          className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-[#003473] hover:bg-[#004a99] text-white rounded-lg shadow-lg transition-colors"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          title="Toggle Menu"
         >
-          {isSidebarOpen ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-          )}
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
         </button>
 
         {/* Main Content */}
@@ -99,7 +142,7 @@ function AppContent() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/sessions" element={<Sessions />} />
             <Route path="/defects" element={<Defects />} />
-            <Route path="/dimensions" element={<Dimension />} />
+            <Route path="/dimensions" element={<Dimensions />} />
           </Routes>
         </main>
       </div>
