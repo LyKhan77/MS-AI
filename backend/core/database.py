@@ -129,8 +129,19 @@ class Database:
         for ext in ['*.jpg', '*.jpeg', '*.png']:
             image_files.extend(glob.glob(os.path.join(captures_dir, ext)))
         
-        # Return relative paths
-        return [os.path.basename(f) for f in sorted(image_files)]
+        # Return objects with filename and timestamp
+        captures = []
+        for filepath in sorted(image_files):
+            filename = os.path.basename(filepath)
+            # Get file modification time
+            timestamp = datetime.fromtimestamp(os.path.getmtime(filepath)).isoformat()
+            captures.append({
+                'filename': filename,
+                'timestamp': timestamp
+            })
+        
+        return captures
+
     
     def get_stats_overview(self):
         """Get aggregate statistics across all sessions"""
