@@ -4,6 +4,8 @@ flask-cors
 ultralytics
 opencv-python-headless  # Better for server environments
 numpy
+filterpy==1.4.5  # Kalman filter for SORT tracking
+scipy>=1.10.0    # Optimization for tracking
 eventlet
 python-dotenv
 
