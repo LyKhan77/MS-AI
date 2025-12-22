@@ -33,9 +33,11 @@ class MetalSheetCounter:
         self.confidence = confidence
         
         # Reset tracker and counted IDs for new session
+        from core.tracker import KalmanBoxTracker
+        KalmanBoxTracker.count = 0  # Reset ID counter for new session
         self.tracker = Sort(max_age=30, min_hits=3, iou_threshold=0.3)
         self.counted_ids = set()
-        print(f"[DETECTOR] Session set with confidence: {confidence}, tracker reset")
+        print(f"[DETECTOR] Session set with confidence: {confidence}, tracker reset, IDs reset to 1")
 
     def process(self, frame):
         """
@@ -77,7 +79,7 @@ class MetalSheetCounter:
         return self.current_count, annotated_frame
     
     def _draw_tracks(self, frame, tracked_objects):
-        """Draw bounding boxes with track IDs"""
+        """Draw bounding boxes with track IDs and class name"""
         for obj in tracked_objects:
             x1, y1, x2, y2, track_id = obj
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
@@ -89,8 +91,9 @@ class MetalSheetCounter:
             # Draw box
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             
-            # Draw track ID
-            label = f"ID:{track_id}"
+            # Draw track ID with class name
+            class_name = "Metal Sheet"
+            label = f"ID:{track_id} {class_name}"
             if track_id in self.counted_ids:
                 label += " ✓"
             
