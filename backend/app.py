@@ -11,7 +11,6 @@ from config import Config
 from core.database import Database
 from core.camera import Camera
 from core.detector import MetalSheetCounter
-from core.analyzer import SheetAnalyzer
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -22,7 +21,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 db = Database()
 camera = Camera()
 detector = MetalSheetCounter()
-analyzer = SheetAnalyzer()
 
 # Global state for the streaming thread
 streaming_thread = None
