@@ -188,14 +188,18 @@ class Sort:
         # Use scipy for optimal matching
         matched_indices = self._linear_assignment(-iou_matrix)
         
+        # Handle empty case
+        if len(matched_indices) == 0:
+            matched_indices = np.empty((0, 2), dtype=int)
+        
         unmatched_detections = []
         for d in range(len(detections)):
-            if d not in matched_indices[:, 0]:
+            if len(matched_indices) == 0 or d not in matched_indices[:, 0]:
                 unmatched_detections.append(d)
         
         unmatched_trackers = []
         for t in range(len(trackers)):
-            if t not in matched_indices[:, 1]:
+            if len(matched_indices) == 0 or t not in matched_indices[:, 1]:
                 unmatched_trackers.append(t)
         
         # Filter out low IOU matches
