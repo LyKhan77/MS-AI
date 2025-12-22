@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
+import Sessions from './pages/Sessions';
 
 // Placeholder Pages for Menu
 const Defects = () => <div className="p-8 text-white">Defect Analysis Page (Coming Soon in Phase 2)</div>;
@@ -34,6 +35,11 @@ function App() {
               {/* Dashboard Icon */}
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
               {isSidebarOpen && <span className="font-medium">Dashboard</span>}
+            </Link>
+            <Link to="/sessions" className={`flex items-center gap-3 px-3 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Sessions History">
+              {/* Sessions Icon (Clock/History) */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              {isSidebarOpen && <span className="font-medium">Sessions</span>}
             </Link>
             <Link to="/defects" className={`flex items-center gap-3 px-3 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Defect Analysis">
               {/* Defects Icon (Microscope/Search) */}
@@ -73,6 +79,7 @@ function App() {
         <main className="flex-1 overflow-auto bg-[#0f172a]">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/sessions" element={<Sessions />} />
             <Route path="/defects" element={<Defects />} />
             <Route path="/dimensions" element={<Dimension />} />
           </Routes>

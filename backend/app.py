@@ -130,7 +130,38 @@ def stop_session_route():
 
 @app.route('/api/sessions', methods=['GET'])
 def get_sessions():
+    """Get all sessions (simple list)"""
     return jsonify(db.get_all_sessions())
+
+@app.route('/api/sessions/list', methods=['GET'])
+def get_sessions_list():
+    """Get paginated sessions list"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    sort_by = request.args.get('sort', 'start_time')
+    order = request.args.get('order', 'desc')
+    
+    result = db.get_sessions_paginated(page, per_page, sort_by, order)
+    return jsonify(result)
+
+@app.route('/api/sessions/<session_id>/captures', methods=['GET'])
+def get_session_captures_route(session_id):
+    """Get capture images for a session"""
+    captures = db.get_session_captures(session_id)
+    return jsonify({'session_id': session_id, 'captures': captures, 'count': len(captures)})
+
+@app.route('/api/sessions/<session_id>/captures/<filename>', methods=['GET'])
+def serve_capture_image(session_id, filename):
+    """Serve capture image file"""
+    from flask import send_from_directory
+    captures_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'captures')
+    return send_from_directory(captures_dir, filename)
+
+@app.route('/api/stats/overview', methods=['GET'])
+def get_stats_overview():
+    """Get aggregate statistics"""
+    stats = db.get_stats_overview()
+    return jsonify(stats)
 
 @app.route('/api/upload', methods=['POST'])
 def upload_video():

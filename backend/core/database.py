@@ -93,3 +93,72 @@ class Database:
                 if session['id'] == db['active_session_id']:
                     return session
         return None
+    
+    def get_sessions_paginated(self, page=1, per_page=10, sort_by='start_time', order='desc'):
+        """Get paginated and sorted session list"""
+        db = self._load_db()
+        sessions = db['sessions'].copy()
+        
+        # Sort sessions
+        reverse = (order == 'desc')
+        sessions.sort(key=lambda x: x.get(sort_by, ''), reverse=reverse)
+        
+        # Paginate
+        total = len(sessions)
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        return {
+            'sessions': sessions[start:end],
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': (total + per_page - 1) // per_page
+        }
+    
+    def get_session_captures(self, session_id):
+        """Get list of capture files for a session"""
+        import glob
+        captures_dir = os.path.join(self.sessions_dir, session_id, 'captures')
+        
+        if not os.path.exists(captures_dir):
+            return []
+        
+        # Get all image files
+        image_files = []
+        for ext in ['*.jpg', '*.jpeg', '*.png']:
+            image_files.extend(glob.glob(os.path.join(captures_dir, ext)))
+        
+        # Return relative paths
+        return [os.path.basename(f) for f in sorted(image_files)]
+    
+    def get_stats_overview(self):
+        """Get aggregate statistics across all sessions"""
+        from datetime import datetime, timedelta
+        
+        db = self._load_db()
+        sessions = db['sessions']
+        
+        total_sessions = len(sessions)
+        total_count = sum(s.get('total_count', 0) for s in sessions)
+        avg_count = total_count / total_sessions if total_sessions > 0 else 0
+        
+        # Sessions today
+        today = datetime.now().date()
+        sessions_today = sum(
+            1 for s in sessions 
+            if datetime.fromisoformat(s['start_time']).date() == today
+        )
+        
+        # Completed vs active
+        completed = sum(1 for s in sessions if s['status'] == 'completed')
+        active = sum(1 for s in sessions if s['status'] == 'active')
+        
+        return {
+            'total_sessions': total_sessions,
+            'total_count': total_count,
+            'avg_count': round(avg_count, 2),
+            'sessions_today': sessions_today,
+            'completed_sessions': completed,
+            'active_sessions': active
+        }
