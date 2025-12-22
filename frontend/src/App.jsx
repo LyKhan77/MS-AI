@@ -14,8 +14,7 @@ function AppContent() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <BrowserRouter>
-      <div className="flex h-screen w-full bg-[#0f172a] overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-[#0f172a] overflow-hidden font-sans">
         {/* Sidebar */}
         <aside 
           className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-[#001e45] text-white flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative`}
@@ -104,7 +103,6 @@ function AppContent() {
           </Routes>
         </main>
       </div>
-    </BrowserRouter>
   );
 }
 
