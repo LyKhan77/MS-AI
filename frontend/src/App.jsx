@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Sessions from './pages/Sessions';
 
@@ -7,8 +7,11 @@ import Sessions from './pages/Sessions';
 const Defects = () => <div className="p-8 text-white">Defect Analysis Page (Coming Soon in Phase 2)</div>;
 const Dimension = () => <div className="p-8 text-white">Dimension Measurement Page (Coming Soon in Phase 3)</div>;
 
-function App() {
+function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <BrowserRouter>
@@ -31,22 +34,38 @@ function App() {
           
           {/* Nav Links */}
           <nav className="flex-1 p-3 flex flex-col gap-2 overflow-hidden">
-            <Link to="/" className={`flex items-center gap-3 px-3 py-3 rounded-lg bg-[#003473] text-white shadow-lg shadow-blue-900/20 ${!isSidebarOpen && 'justify-center'}`} title="Dashboard">
+            <Link to="/" className={`flex items-center gap-3 px-3 py-3 rounded-lg ${
+              isActive('/') 
+                ? 'bg-[#003473] text-white shadow-lg shadow-blue-900/20' 
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            } transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Dashboard">
               {/* Dashboard Icon */}
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
               {isSidebarOpen && <span className="font-medium">Dashboard</span>}
             </Link>
-            <Link to="/sessions" className={`flex items-center gap-3 px-3 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Sessions History">
+            <Link to="/sessions" className={`flex items-center gap-3 px-3 py-3 rounded-lg ${
+              isActive('/sessions') 
+                ? 'bg-[#003473] text-white shadow-lg shadow-blue-900/20' 
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            } transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Sessions History">
               {/* Sessions Icon (Clock/History) */}
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               {isSidebarOpen && <span className="font-medium">Sessions</span>}
             </Link>
-            <Link to="/defects" className={`flex items-center gap-3 px-3 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Defect Analysis">
+            <Link to="/defects" className={`flex items-center gap-3 px-3 py-3 rounded-lg ${
+              isActive('/defects') 
+                ? 'bg-[#003473] text-white shadow-lg shadow-blue-900/20' 
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            } transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Defect Analysis">
               {/* Defects Icon (Microscope/Search) */}
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               {isSidebarOpen && <span className="font-medium">Defects</span>}
             </Link>
-            <Link to="/dimensions" className={`flex items-center gap-3 px-3 py-3 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Dimensions">
+            <Link to="/dimensions" className={`flex items-center gap-3 px-3 py-3 rounded-lg ${
+              isActive('/dimensions') 
+                ? 'bg-[#003473] text-white shadow-lg shadow-blue-900/20' 
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+            } transition-colors ${!isSidebarOpen && 'justify-center'}`} title="Dimensions">
               {/* Dimensions Icon (Ruler) */}
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>
               {isSidebarOpen && <span className="font-medium">Dimensions</span>}
@@ -85,6 +104,14 @@ function App() {
           </Routes>
         </main>
       </div>
+    </BrowserRouter>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }

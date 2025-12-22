@@ -162,3 +162,26 @@ class Database:
             'completed_sessions': completed,
             'active_sessions': active
         }
+    
+    def delete_session(self, session_id):
+        """Delete a session and its files"""
+        import shutil
+        
+        db = self._load_db()
+        
+        # Remove session from list
+        db['sessions'] = [s for s in db['sessions'] if s['id'] != session_id]
+        
+        # Clear active session if it's the one being deleted
+        if db['active_session_id'] == session_id:
+            db['active_session_id'] = None
+        
+        self._save_db(db)
+        
+        # Delete session directory
+        session_dir = os.path.join(self.sessions_dir, session_id)
+        if os.path.exists(session_dir):
+            shutil.rmtree(session_dir)
+        
+        return {"status": "deleted", "session_id": session_id}
+```

@@ -163,6 +163,12 @@ def get_stats_overview():
     stats = db.get_stats_overview()
     return jsonify(stats)
 
+@app.route('/api/sessions/<session_id>', methods=['DELETE'])
+def delete_session_route(session_id):
+    """Delete a session and its data"""
+    result = db.delete_session(session_id)
+    return jsonify(result)
+
 @app.route('/api/upload', methods=['POST'])
 def upload_video():
     global streaming_thread

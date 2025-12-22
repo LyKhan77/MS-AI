@@ -83,17 +83,9 @@ const Sessions = () => {
   return (
     <div className="p-8 pb-12 h-full flex flex-col gap-8 overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Sessions History</h1>
-          <p className="text-gray-400">View and analyze past production sessions</p>
-        </div>
-        <button
-          onClick={() => navigate('/')}
-          className="px-4 py-2 bg-primary hover:bg-secondary rounded-lg text-white transition-colors"
-        >
-          ← Back to Dashboard
-        </button>
+      <div>
+        <h1 className="text-3xl font-bold text-white">Sessions History</h1>
+        <p className="text-gray-400">View and analyze past production sessions</p>
       </div>
 
       {/* Stats Cards */}
@@ -173,12 +165,20 @@ const Sessions = () => {
                       </span>
                     </td>
                     <td className="p-4">
-                      <button
-                        onClick={() => setSelectedSession(session)}
-                        className="px-3 py-1 bg-primary hover:bg-secondary rounded text-white text-sm transition-colors"
-                      >
-                        View Details
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setSelectedSession(session)}
+                          className="px-3 py-1 bg-primary hover:bg-secondary rounded text-white text-sm transition-colors"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDelete(session.id)}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-sm transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

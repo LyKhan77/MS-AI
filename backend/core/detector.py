@@ -56,17 +56,29 @@ class MetalSheetCounter:
             import time
             now = time.time()
             if now - self.last_detection_time > self.cooldown:
-                self.increment_count(frame)
+                # Get bbox of first detection for cropping
+                bbox = detections[0].xyxy[0].tolist()  # [x1, y1, x2, y2]
+                self.increment_count(frame, bbox=bbox)
                 self.last_detection_time = now
         
         return self.current_count, annotated_frame
 
-    def increment_count(self, frame):
+    def increment_count(self, frame, bbox=None):
+        """Increment count and save capture (cropped to bbox if provided)"""
         self.current_count += 1
-        if self.session_id and self.captures_dir:
+        
+        if self.captures_dir and self.session_id:
+            os.makedirs(self.captures_dir, exist_ok=True)
             filename = f"sheet_{self.current_count}_{int(time.time())}.jpg"
-            save_path = os.path.join(self.captures_dir, filename)
-            cv2.imwrite(save_path, frame)
+            filepath = os.path.join(self.captures_dir, filename)
+            
+            # Crop to bounding box if provided
+            if bbox is not None:
+                x1, y1, x2, y2 = bbox
+                cropped = frame[int(y1):int(y2), int(x1):int(x2)]
+                cv2.imwrite(filepath, cropped)
+            else:
+                cv2.imwrite(filepath, frame)
             # TODO: Update DB with new count (done via main app callback usually)
             
     def get_count(self):
