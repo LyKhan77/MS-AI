@@ -184,4 +184,3 @@ class Database:
             shutil.rmtree(session_dir)
         
         return {"status": "deleted", "session_id": session_id}
-```
