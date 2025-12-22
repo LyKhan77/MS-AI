@@ -288,39 +288,6 @@ const SessionDetailModal = ({ session, onClose }) => {
           </button>
         </div>
 
-            
-            {/* Defect Gallery */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {defects.map((defect, idx) => (
-                <div key={idx} className="bg-black/20 rounded-lg overflow-hidden border border-white/10 hover:border-primary transition-colors group">
-                  <div className="relative aspect-square">
-                    <img 
-                      src={`/api/sessions/${session.id}/defects/${defect.crop_filename}`}
-                      alt={`${defect.defect_type} defect`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23333" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" fill="%23666" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
-                      }}
-                    />
-                    <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
-                      defect.severity === 'critical' ? 'bg-red-500' :
-                      defect.severity === 'moderate' ? 'bg-yellow-500' :
-                      'bg-green-500'
-                    }`} />
-                  </div>
-                  <div className="p-2">
-                    <div className="text-xs font-semibold text-white truncate capitalize">
-                      {defect.defect_type.replace('_', ' ')}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {(defect.confidence * 100).toFixed(0)}% • {defect.area_pixels}px²
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Body */}
         <div className="p-4 md:p-6 overflow-y-auto flex-1">
