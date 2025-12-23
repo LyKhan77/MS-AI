@@ -38,13 +38,19 @@ class DefectAnalyzer:
         self.predictor = None
         
         # Defect prompts for zero-shot detection
-        self.defect_prompts = {
+        self.all_defect_prompts = {
             'scratch': 'linear scratch mark on metal surface',
             'dent': 'dent or deformation on metal sheet',
             'rust': 'rust spot or corrosion on metal',
             'hole': 'hole or perforation in metal',
-            'coating_bubble': 'paint bubble or coating defect'
+            'coating_bubble': 'paint bubble or coating defect',
+            'oil_stain': 'oil or grease stain on metal',
+            'discoloration': 'color irregularity or uneven tint',
+            'pitting': 'small pits or indentations on surface',
+            'edge_burr': 'rough or sharp edge burr',
+            'warping': 'warped or bent metal deformation'
         }
+        self.defect_prompts = self.all_defect_prompts.copy()
         
         # Size thresholds for severity classification (pixels²)
         self.severity_thresholds = {
@@ -99,14 +105,15 @@ class DefectAnalyzer:
             raise RuntimeError(f"SAM-3 model loading failed. Defect analysis cannot proceed. {e}")
 
     
-    def analyze_session_captures(self, session_id: int, captures_dir: str) -> Dict:
+    def analyze_session_captures(self, session_id: int, captures_dir: str, defect_types: list = None) -> Dict:
         """
         Analyze all captured images from a session for defects
-        
+
         Args:
             session_id: Session ID
             captures_dir: Directory containing captured images
-            
+            defect_types: Optional list of defect type IDs to detect (defaults to all)
+
         Returns:
             results: {
                 'total_images': int,
@@ -116,50 +123,57 @@ class DefectAnalyzer:
         """
         # Load model if not already loaded
         self.load_model()
-        
+
+        # Filter defect prompts based on selection
+        if defect_types:
+            self.defect_prompts = {k: v for k, v in self.all_defect_prompts.items() if k in defect_types}
+            print(f"[DefectAnalyzer] Filtering to {len(self.defect_prompts)} defect types: {list(self.defect_prompts.keys())}")
+        else:
+            self.defect_prompts = self.all_defect_prompts.copy()
+
         results = {
             'total_images': 0,
             'defects_found': 0,
             'defects': [],
             'processing_time': 0
         }
-        
+
         # Check if captures directory exists
         if not os.path.exists(captures_dir):
             print(f"[DefectAnalyzer] Captures directory not found: {captures_dir}")
             return results
-        
+
         # Get all image files
-        image_files = [f for f in os.listdir(captures_dir) 
+        image_files = [f for f in os.listdir(captures_dir)
                       if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
         image_files.sort()
-        
+
         results['total_images'] = len(image_files)
         print(f"[DefectAnalyzer] Analyzing {len(image_files)} images from session {session_id}...")
-        
+
         start_time = time.time()
-        
+
         # Process each image
         for idx, img_file in enumerate(image_files):
             print(f"[DefectAnalyzer] Processing {idx+1}/{len(image_files)}: {img_file}")
-            
+
             img_path = os.path.join(captures_dir, img_file)
             image = cv2.imread(img_path)
-            
+
             if image is None:
                 print(f"[DefectAnalyzer] Failed to load image: {img_file}")
                 continue
-            
+
             # Analyze image for defects
             defects = self._analyze_image(image, img_file, session_id)
-            
+
             results['defects'].extend(defects)
             results['defects_found'] += len(defects)
-        
+
         results['processing_time'] = time.time() - start_time
-        
+
         print(f"[DefectAnalyzer] Analysis complete! Found {results['defects_found']} defects in {results['processing_time']:.1f}s")
-        
+
         return results
     
     def _analyze_image(self, image: np.ndarray, img_filename: str, session_id: int) -> List[Dict]:

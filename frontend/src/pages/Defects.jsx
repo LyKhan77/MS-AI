@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
 
+const DEFECT_TYPES = [
+  { id: 'scratch', label: 'Scratches', prompt: 'linear scratch mark on metal surface' },
+  { id: 'dent', label: 'Dents', prompt: 'dent or deformation on metal sheet' },
+  { id: 'rust', label: 'Rust/Corrosion', prompt: 'rust spot or corrosion on metal' },
+  { id: 'hole', label: 'Holes/Perforations', prompt: 'hole or perforation in metal' },
+  { id: 'coating_bubble', label: 'Coating Bubbles', prompt: 'paint bubble or coating defect' },
+  { id: 'oil_stain', label: 'Oil Stains', prompt: 'oil or grease stain on metal' },
+  { id: 'discoloration', label: 'Discoloration', prompt: 'color irregularity or uneven tint' },
+  { id: 'pitting', label: 'Pitting', prompt: 'small pits or indentations on surface' },
+  { id: 'edge_burr', label: 'Edge Burrs', prompt: 'rough or sharp edge burr' },
+  { id: 'warping', label: 'Warping', prompt: 'warped or bent metal deformation' }
+];
+
 const Defects = () => {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
@@ -10,10 +23,49 @@ const Defects = () => {
   const [showImagesModal, setShowImagesModal] = useState(false);
   const [captures, setCaptures] = useState([]);
   const [loadingCaptures, setLoadingCaptures] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [selectedDefectTypes, setSelectedDefectTypes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('defectTypesConfig');
+      return saved ? JSON.parse(saved) : ['scratch'];
+    } catch {
+      return ['scratch'];
+    }
+  });
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
 
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('defectTypesConfig', JSON.stringify(selectedDefectTypes));
+  }, [selectedDefectTypes]);
+
+  const handleDefectToggle = (type) => {
+    setSelectedDefectTypes(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedDefectTypes(DEFECT_TYPES.map(d => d.id));
+  };
+
+  const handleClearAll = () => {
+    setSelectedDefectTypes([]);
+  };
+
+  const handleSaveConfig = () => {
+    setShowConfigModal(false);
+  };
+
+  const showToast = (message, type = 'error') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+  };
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -70,31 +122,38 @@ const Defects = () => {
 
   const handleRunSegmentation = async () => {
     if (!selectedSession) {
-      alert('Please select a session first');
+      showToast('Please select a session first', 'error');
+      return;
+    }
+
+    if (selectedDefectTypes.length === 0) {
+      showToast('No Defect Type selected.', 'error');
       return;
     }
 
     if (!confirm(`Run defect analysis on "${selectedSession.name}"?\n\nThis may take several minutes depending on the number of captures.`)) {
       return;
     }
-    
+
     setIsAnalyzing(true);
     try {
       const response = await fetch(`/api/sessions/${selectedSession.id}/analyze_defects`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ defect_types: selectedDefectTypes })
       });
       const data = await response.json();
-      
+
       if (data.status === 'completed') {
         setDefects(data.results.defects || []);
-        
+
         // Show different message based on results
         if (data.results.defects_found === 0) {
           alert(`Analysis Complete!\n\nNo defects detected\nMetal sheets are safe\nSession quality: PASS\n\nProcessing time: ${data.results.processing_time.toFixed(1)}s`);
         } else {
           alert(`Analysis complete!\n\nFound ${data.results.defects_found} defects in ${data.results.processing_time.toFixed(1)}s\n\nReview defects below.`);
         }
-        
+
         // Refresh defect data
         await fetchDefects(selectedSession.id);
         // Refresh sessions list to update stats
@@ -215,7 +274,22 @@ const Defects = () => {
                   </p>
                 )}
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setShowConfigModal(true)}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white font-medium transition-all text-sm md:text-base"
+                >
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Configuration
+                    {selectedDefectTypes.length > 0 && (
+                      <span className="bg-primary px-2 py-0.5 rounded text-xs">{selectedDefectTypes.length}</span>
+                    )}
+                  </span>
+                </button>
                 <button
                   onClick={handleRunSegmentation}
                   disabled={isAnalyzing || !selectedSession}
@@ -444,6 +518,118 @@ const Defects = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Configuration Modal */}
+      {showConfigModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowConfigModal(false)}>
+          <div className="bg-[#1a1a2e] border border-white/10 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Defect Configuration
+                </h2>
+                <p className="text-sm text-gray-400 mt-1">Select defect types to detect</p>
+              </div>
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="grid grid-cols-2 gap-3">
+                {DEFECT_TYPES.map((defect) => (
+                  <button
+                    key={defect.id}
+                    onClick={() => handleDefectToggle(defect.id)}
+                    className={`flex items-center gap-3 p-4 rounded-lg border transition-all ${
+                      selectedDefectTypes.includes(defect.id)
+                        ? 'bg-primary/20 border-primary text-white'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                      selectedDefectTypes.includes(defect.id)
+                        ? 'bg-primary border-primary'
+                        : 'border-gray-500'
+                    }`}>
+                      {selectedDefectTypes.includes(defect.id) && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-sm font-medium">{defect.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSelectAll}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-sm text-gray-300 rounded transition-colors"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={handleClearAll}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-sm text-gray-300 rounded transition-colors"
+                  >
+                    Clear All
+                  </button>
+                </div>
+                <div className="text-sm text-gray-400">
+                  {selectedDefectTypes.length} of {DEFECT_TYPES.length} selected
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end">
+              <button
+                onClick={handleSaveConfig}
+                className="px-6 py-2 bg-primary hover:bg-secondary rounded-lg text-white font-medium transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg border shadow-lg transition-all ${
+          toast.type === 'error'
+            ? 'bg-red-900/90 border-red-500 text-white'
+            : 'bg-green-900/90 border-green-500 text-white'
+        }`}>
+          <div className="flex items-center gap-2">
+            {toast.type === 'error' ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            <span className="text-sm font-medium">{toast.message}</span>
           </div>
         </div>
       )}

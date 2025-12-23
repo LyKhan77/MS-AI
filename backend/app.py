@@ -270,9 +270,13 @@ def stop_camera():
 def analyze_session_defects(session_id):
     """
     Run SAM-3 defect analysis on all captures from a session
-    
+
     POST /api/sessions/<session_id>/analyze_defects
-    
+    Body (optional):
+        {
+            'defect_types': ['scratch', 'dent', 'rust', ...]
+        }
+
     Response:
         {
             'status': 'completed' | 'error',
@@ -280,35 +284,40 @@ def analyze_session_defects(session_id):
         }
     """
     from core.defect_analyzer import get_defect_analyzer
-    
+
     # Get session
     session = db.get_session_by_id(session_id)
     if not session:
         return jsonify({'error': 'Session not found'}), 404
-    
+
     # Get captures directory
     captures_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'captures')
     if not os.path.exists(captures_dir):
         return jsonify({'error': 'No captures found'}), 404
-    
+
+    # Get defect types from request body
+    data = request.get_json() or {}
+    defect_types = data.get('defect_types')
+
     try:
         # Get analyzer instance
         analyzer = get_defect_analyzer()
-        
+
         # Run analysis
         print(f"[API] Starting defect analysis for session {session_id}...")
-        results = analyzer.analyze_session_captures(session_id, captures_dir)
-        
+        print(f"[API] Defect types: {defect_types if defect_types else 'All'}")
+        results = analyzer.analyze_session_captures(session_id, captures_dir, defect_types)
+
         # Save results to database
         db.save_defect_analysis(session_id, results)
-        
+
         print(f"[API] Analysis complete! Found {results['defects_found']} defects")
-        
+
         return jsonify({
             'status': 'completed',
             'results': results
         }), 200
-        
+
     except Exception as e:
         print(f"[API] Error during analysis: {e}")
         import traceback
