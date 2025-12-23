@@ -2,10 +2,12 @@
 
 ## Overview
 
-This is a Quality Control Dashboard for Metal Sheet Detection and Counting using AI.
+This is a Quality Control Dashboard for Metal Sheet Detection, Counting, and Defect Analysis using AI.
 
-- **Real-Time Counting**: Uses **YOLO-World** (Zero-shot) to detect sheets.
-- **Defect Analysis**: Uses **SAM 3** (Segment Anything) for detailed inspection.
+- **Real-Time Counting**: Uses **YOLOv11m** (custom trained) + **SORT** tracking to detect and count unique metal sheets.
+- **Defect Analysis**: Uses **SAM-3** (Segment Anything) for post-session defect detection.
+- **Defect Types**: Scratches, dents, rust, holes, coating bubbles.
+- **Severity Classification**: Minor, moderate, critical based on defect area.
 - **Frontend**: React (Vite) + Tailwind CSS.
 - **Backend**: Flask + SocketIO.
 
@@ -62,13 +64,45 @@ _UI runs on `http://localhost:5173`_
 
 ## Configuration
 
-- **Camera Source**: By default uses Webcam `0`. You can change this in the UI or in `backend/config.py` (`RTSP_URL`).
-- **Models**: code expects `yolov8s-world.pt` (auto-downloads) and a SAM 3 checkpoint.
+- **Camera Source**: By default uses Webcam `0`. Supports RTSP streams and video file upload via UI.
+- **Models**:
+  - YOLOv11m: `backend/yolo11m_metalsheet.pt` (custom trained on Roboflow dataset)
+  - SAM-3: Loaded from HuggingFace Transformers (`facebook/sam3`)
+- **HuggingFace Setup**: Run `huggingface-cli login` or `./hf_login.sh` for SAM-3 access.
 
 ## Usage
 
-1. Open the Dashboard.
-2. Enter a **Session Name** and **Max Count**.
+### Live Detection & Counting
+
+1. Open Dashboard and set camera source (webcam/RTSP or upload video).
+2. Enter a **Session Name**, **Max Count**, and **Confidence Threshold**.
 3. Click **Start Session**.
-4. The system will count sheets seen by the camera.
-5. Captures are saved in `backend/data/sessions/<id>/captures`.
+4. System counts unique metal sheets using SORT tracking.
+5. Captures saved with bounding box crops: `backend/data/sessions/<id>/captures/`.
+
+### Defect Analysis
+
+1. After session completes, go to **Defects** page.
+2. Click **Analyze Defects** to run SAM-3 on session captures.
+3. View detected defects with severity classification.
+4. Export defect crops as ZIP file.
+
+### Session Management
+
+- **Sessions** page: View history with pagination, delete sessions
+- Each session stores captures and defect analysis results
+- Real-time count tracking during active sessions
+
+## Training YOLOv11m Model
+
+To train a custom YOLOv11m model on the Metal Sheet dataset:
+
+```bash
+cd training-model
+python train_yolo11m.py
+```
+
+Training details:
+- Dataset: Roboflow Metal Sheet v6 (single class: metalsheet)
+- Model automatically copied to `backend/yolo11m_metalsheet.pt` after training
+- GPU Memory: ~6-8GB VRAM (batch=16)
