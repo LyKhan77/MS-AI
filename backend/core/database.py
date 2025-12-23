@@ -276,3 +276,50 @@ class Database:
         """
         defects = self.get_session_defects(session_id)
         return [d for d in defects if d.get('image_filename') == image_filename]
+
+    def update_defect_crop_status(self, session_id, defect_indices, crop_filename):
+        """
+        Mark a defect as having a cropped PNG
+
+        Args:
+            session_id: Session ID
+            defect_indices: List of indices of defects to update (or single index)
+            crop_filename: Generated crop filename
+        """
+        db = self._load_db()
+
+        # Find session
+        for session in db['sessions']:
+            if session['id'] == session_id and 'defects_data' in session:
+                # Handle single index or list
+                if isinstance(defect_indices, int):
+                    defect_indices = [defect_indices]
+
+                # Update defects at specified indices
+                for idx in defect_indices:
+                    if 0 <= idx < len(session['defects_data']):
+                        session['defects_data'][idx]['crop_filename'] = crop_filename
+                        session['defects_data'][idx]['cropped'] = True
+
+                self._save_db(db)
+                print(f"[Database] Updated crop status for defect(s) {defect_indices}: {crop_filename}")
+                return
+
+        print(f"[Database] Warning: Could not update crop status - session or defects not found")
+
+    def get_defect_by_crop_filename(self, session_id, crop_filename):
+        """
+        Get defect by crop filename
+
+        Args:
+            session_id: Session ID
+            crop_filename: Crop filename
+
+        Returns:
+            defect: Defect dictionary or None
+        """
+        defects = self.get_session_defects(session_id)
+        for defect in defects:
+            if defect.get('crop_filename') == crop_filename:
+                return defect
+        return None

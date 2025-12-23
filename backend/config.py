@@ -20,7 +20,21 @@ class Config:
     
     # Analysis
     PIXEL_TO_MM_DEFAULT = 0.5 # Default calibration (override per session)
-    
+
+    # Defect Colors (BGR format for cv2)
+    DEFECT_COLORS = {
+        'scratch': [0, 0, 255],        # Red
+        'dent': [0, 255, 0],           # Green
+        'rust': [0, 165, 255],         # Orange
+        'hole': [0, 255, 255],         # Yellow
+        'coating_bubble': [255, 0, 255], # Magenta
+        'oil_stain': [255, 0, 0],      # Blue
+        'discoloration': [128, 128, 128], # Gray
+        'pitting': [203, 192, 255],    # Pink
+        'edge_burr': [42, 42, 165],    # Brown
+        'warping': [255, 255, 0]       # Cyan
+    }
+
     # Cors
     CORS_HEADERS = 'Content-Type'
 

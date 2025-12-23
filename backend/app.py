@@ -428,6 +428,267 @@ def get_segmented_image(session_id, filename):
 
 
 # ============================================================
+# SAM-3 Workflow Redesign Endpoints
+# ============================================================
+
+@app.route('/api/sessions/<session_id>/segment_only', methods=['POST'])
+def segment_session_images(session_id):
+    """
+    Run SAM-3 segmentation without cropping
+
+    POST /api/sessions/<session_id>/segment_only
+    Body:
+        {
+            'image_filename': str (optional - single image),
+            'defect_types': [...]
+        }
+
+    Response:
+        {
+            'status': 'completed',
+            'results': [...]
+        }
+    """
+    from core.defect_analyzer import get_defect_analyzer
+
+    session = db.get_session_by_id(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    data = request.get_json() or {}
+    image_filename = data.get('image_filename')
+    defect_types = data.get('defect_types')
+
+    try:
+        analyzer = get_defect_analyzer()
+
+        if image_filename:
+            # Single image segmentation
+            captures_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'captures')
+            img_path = os.path.join(captures_dir, image_filename)
+
+            if not os.path.exists(img_path):
+                return jsonify({'error': 'Image not found'}), 404
+
+            result = analyzer.segment_image_only(session_id, img_path, defect_types)
+
+            # Update database with results
+            if result and result.get('defects'):
+                # Get existing defects
+                existing_defects = db.get_session_defects(session_id)
+
+                # Remove any existing defects for this image
+                existing_defects = [d for d in existing_defects if d.get('image_filename') != image_filename]
+
+                # Add new defects
+                existing_defects.extend(result['defects'])
+
+                # Save to session
+                db.save_defect_analysis(session_id, {
+                    'total_images': session.get('defects_analyzed', 0) + 1,
+                    'defects_found': len(existing_defects),
+                    'defects': existing_defects
+                })
+
+            return jsonify({'status': 'completed', 'results': result})
+        else:
+            # All images segmentation
+            captures_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'captures')
+            if not os.path.exists(captures_dir):
+                return jsonify({'error': 'No captures found'}), 404
+
+            image_files = [f for f in os.listdir(captures_dir)
+                          if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+            image_files.sort()
+
+            all_results = []
+            all_defects = []
+
+            for img_file in image_files:
+                img_path = os.path.join(captures_dir, img_file)
+                result = analyzer.segment_image_only(session_id, img_path, defect_types)
+
+                if result:
+                    all_results.append(result)
+                    if result.get('defects'):
+                        all_defects.extend(result['defects'])
+
+            # Save all results to database
+            db.save_defect_analysis(session_id, {
+                'total_images': len(image_files),
+                'defects_found': len(all_defects),
+                'defects': all_defects
+            })
+
+            return jsonify({'status': 'completed', 'results': all_results})
+
+    except Exception as e:
+        print(f"[API] Error during segment_only: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+@app.route('/api/sessions/<session_id>/crop_defects', methods=['POST'])
+def crop_session_defects(session_id):
+    """
+    Generate cropped PNGs for existing defects
+
+    POST /api/sessions/<session_id>/crop_defects
+    Body:
+        {
+            'image_filename': str (optional - single image)
+        }
+
+    Response:
+        {
+            'status': 'completed',
+            'crop_count': int,
+            'crop_filenames': [...]
+        }
+    """
+    from core.defect_analyzer import get_defect_analyzer
+
+    session = db.get_session_by_id(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    data = request.get_json() or {}
+    image_filename = data.get('image_filename')
+
+    try:
+        analyzer = get_defect_analyzer()
+        defects = db.get_session_defects(session_id)
+
+        if image_filename:
+            # Crop defects for single image
+            image_defects = [d for d in defects if d.get('image_filename') == image_filename]
+
+            if not image_defects:
+                return jsonify({'error': 'No defects found for image'}), 404
+
+            crop_filenames = analyzer.crop_and_store_defects(
+                session_id, image_filename, image_defects
+            )
+
+            # Update database
+            for idx, defect in enumerate(image_defects):
+                db.update_defect_crop_status(session_id, defects.index(defect), defect['crop_filename'])
+
+            return jsonify({'status': 'completed', 'crop_count': len(crop_filenames), 'crop_filenames': crop_filenames})
+        else:
+            # Crop all defects
+            from collections import defaultdict
+            defects_by_image = defaultdict(list)
+            for defect in defects:
+                defects_by_image[defect.get('image_filename')].append(defect)
+
+            all_crop_filenames = []
+
+            for img_filename, img_defects in defects_by_image.items():
+                crop_filenames = analyzer.crop_and_store_defects(session_id, img_filename, img_defects)
+                all_crop_filenames.extend(crop_filenames)
+
+                # Update database for each defect
+                for defect in img_defects:
+                    db.update_defect_crop_status(session_id, defects.index(defect), defect['crop_filename'])
+
+            return jsonify({'status': 'completed', 'crop_count': len(all_crop_filenames), 'crop_filenames': all_crop_filenames})
+
+    except Exception as e:
+        print(f"[API] Error during crop_defects: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+@app.route('/api/sessions/<session_id>/segment_and_crop', methods=['POST'])
+def segment_and_crop(session_id):
+    """
+    Run SAM-3 segmentation and cropping in one operation
+
+    POST /api/sessions/<session_id>/segment_and_crop
+    Body:
+        {
+            'defect_types': [...],
+            'image_filename': str (optional - single image)
+        }
+
+    Response:
+        {
+            'status': 'completed',
+            'results': {...}
+        }
+    """
+    from core.defect_analyzer import get_defect_analyzer
+
+    session = db.get_session_by_id(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+
+    data = request.get_json() or {}
+    image_filename = data.get('image_filename')
+    defect_types = data.get('defect_types')
+
+    try:
+        analyzer = get_defect_analyzer()
+
+        if image_filename:
+            # Single image
+            captures_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'captures')
+            img_path = os.path.join(captures_dir, image_filename)
+
+            if not os.path.exists(img_path):
+                return jsonify({'error': 'Image not found'}), 404
+
+            # Segment only first
+            segment_result = analyzer.segment_image_only(session_id, img_path, defect_types)
+
+            if not segment_result:
+                return jsonify({'status': 'completed', 'defects_found': 0, 'results': segment_result})
+
+            # Then crop
+            defects = segment_result.get('defects', [])
+            crop_filenames = analyzer.crop_and_store_defects(
+                session_id, image_filename, defects
+            )
+
+            # Update database
+            existing_defects = db.get_session_defects(session_id)
+            existing_defects = [d for d in existing_defects if d.get('image_filename') != image_filename]
+            existing_defects.extend(defects)
+
+            db.save_defect_analysis(session_id, {
+                'total_images': session.get('defects_analyzed', 0) + 1,
+                'defects_found': len(existing_defects),
+                'defects': existing_defects
+            })
+
+            return jsonify({
+                'status': 'completed',
+                'defects_found': len(defects),
+                'crop_count': len(crop_filenames),
+                'results': segment_result
+            })
+        else:
+            # All images - use original analyze_session_captures which does both
+            captures_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'captures')
+            if not os.path.exists(captures_dir):
+                return jsonify({'error': 'No captures found'}), 404
+
+            results = analyzer.analyze_session_captures(session_id, captures_dir, defect_types)
+            db.save_defect_analysis(session_id, results)
+
+            return jsonify({'status': 'completed', 'results': results})
+
+    except Exception as e:
+        print(f"[API] Error during segment_and_crop: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+# ============================================================
 # Socket.IO Handlers
 # ============================================================
 

@@ -15,7 +15,8 @@ import numpy as np
 import torch
 import time
 from datetime import datetime
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
+from config import Config
 
 
 class DefectAnalyzer:
@@ -64,6 +65,9 @@ class DefectAnalyzer:
 
         # Cache for segmented images
         self.segmented_cache = {}
+
+        # Temporary mask storage for segment_image_only
+        self._current_masks = {}
 
         print(f"[DefectAnalyzer] Initialized on device: {self.device}")
     
@@ -182,6 +186,191 @@ class DefectAnalyzer:
         print(f"[DefectAnalyzer] Analysis complete! Found {results['defects_found']} defects in {results['processing_time']:.1f}s")
 
         return results
+
+    def segment_image_only(
+        self,
+        session_id: int,
+        image_path: str,
+        defect_types: list = None
+    ) -> Dict:
+        """
+        Segment image using SAM-3 and save overlay without cropping
+
+        Args:
+            session_id: Session ID
+            image_path: Path to image file
+            defect_types: Optional list of defect types to detect
+
+        Returns:
+            results: {
+                'image_filename': str,
+                'segmented_path': str,
+                'defects_detected': int,
+                'defects': [...]
+            }
+        """
+        # Load model if not already loaded
+        self.load_model()
+
+        # Filter defect prompts based on selection
+        if defect_types:
+            self.defect_prompts = {k: v for k, v in self.all_defect_prompts.items() if k in defect_types}
+            print(f"[DefectAnalyzer] Filtering to {len(self.defect_prompts)} defect types: {list(self.defect_prompts.keys())}")
+        else:
+            self.defect_prompts = self.all_defect_prompts.copy()
+
+        # Load image
+        if not os.path.exists(image_path):
+            print(f"[DefectAnalyzer] Image not found: {image_path}")
+            return None
+
+        image = cv2.imread(image_path)
+        if image is None:
+            print(f"[DefectAnalyzer] Failed to load image: {image_path}")
+            return None
+
+        image_filename = os.path.basename(image_path)
+
+        # Analyze image for defects (without cropping)
+        defects = self._analyze_image_no_crop(image, image_filename, session_id)
+
+        # Store masks for segmented image
+        mask_data = {}
+        for defect_type, mask in self._current_masks.items():
+            mask_data[defect_type] = mask
+
+        # Generate segmented image with masks overlaid
+        if defects or mask_data:
+            segmented_path = self._save_segmented_image(
+                image, defects, session_id, image_filename, mask_data
+            )
+        else:
+            segmented_path = None
+
+        # Clear current masks
+        self._current_masks = {}
+
+        return {
+            'image_filename': image_filename,
+            'segmented_path': segmented_path,
+            'defects_detected': len(defects),
+            'defects': defects
+        }
+
+    def _analyze_image_no_crop(self, image: np.ndarray, img_filename: str, session_id: int) -> List[Dict]:
+        """
+        Analyze a single image for defects without generating crops
+
+        Args:
+            image: Image as numpy array (BGR from cv2)
+            img_filename: Filename of the image
+            session_id: Session ID
+
+        Returns:
+            defects: List of detected defects
+        """
+        defects = []
+        self._current_masks = {}
+
+        # Ensure model is loaded
+        if self.model is None:
+            raise RuntimeError("SAM-3 model not loaded. Cannot perform defect analysis.")
+
+        # Preprocess image for SAM-3
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # Import PIL for HuggingFace processing
+        from PIL import Image as PILImage
+        pil_image = PILImage.fromarray(image_rgb)
+
+        orig_h, orig_w = image.shape[:2]
+
+        # Detect defects with each text prompt
+        for defect_type, prompt in self.defect_prompts.items():
+            try:
+                # Prepare inputs with text prompt
+                inputs = self.processor(
+                    text=[prompt],
+                    images=pil_image,
+                    return_tensors="pt"
+                ).to(self.device)
+
+                # Run inference
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+
+                # Post-process using processor's instance segmentation method
+                results = self.processor.post_process_instance_segmentation(
+                    outputs,
+                    threshold=self.confidence_threshold,
+                    mask_threshold=0.5,
+                    target_sizes=[[orig_h, orig_w]]
+                )[0]
+
+                # Extract masks and store for segmented image
+                if 'masks' in results and len(results['masks']) > 0:
+                    # Combine all masks for this defect type
+                    combined_mask = np.zeros((orig_h, orig_w), dtype=np.uint8)
+
+                    for mask in results['masks']:
+                        # Convert mask to numpy
+                        if isinstance(mask, torch.Tensor):
+                            mask_np = mask.cpu().numpy()
+                        else:
+                            mask_np = np.array(mask)
+
+                        # Normalize to uint8 0-255
+                        if mask_np.dtype == bool:
+                            mask_uint8 = (mask_np.astype(np.uint8)) * 255
+                        elif mask_np.max() <= 1.0:
+                            mask_uint8 = (mask_np * 255).astype(np.uint8)
+                        else:
+                            mask_uint8 = mask_np.astype(np.uint8)
+
+                        # Add to combined mask
+                        combined_mask = cv2.bitwise_or(combined_mask, mask_uint8)
+
+                    # Store combined mask
+                    self._current_masks[defect_type] = combined_mask
+
+                    # Get confidence score
+                    score = self.confidence_threshold
+                    if hasattr(outputs, 'iou_scores') and len(outputs.iou_scores) > 0:
+                        score = float(outputs.iou_scores.max())
+
+                    # Calculate bounding box from combined mask
+                    coords = np.argwhere(combined_mask > 0)
+                    if len(coords) > 0:
+                        y_coords, x_coords = coords[:, 0], coords[:, 1]
+                        x_min, x_max = int(x_coords.min()), int(x_coords.max())
+                        y_min, y_max = int(y_coords.min()), int(y_coords.max())
+                        bbox = [x_min, y_min, x_max - x_min, y_max - y_min]
+
+                        # Calculate area
+                        area_pixels = int(combined_mask.sum() / 255)
+
+                        # Determine severity
+                        severity = self._calculate_severity(area_pixels)
+
+                        defects.append({
+                            'image_filename': img_filename,
+                            'defect_type': defect_type,
+                            'severity': severity,
+                            'bbox': bbox,
+                            'area_pixels': area_pixels,
+                            'confidence': float(score),
+                            'crop_filename': None,
+                            'cropped': False,
+                            'timestamp': datetime.now().isoformat()
+                        })
+
+            except Exception as e:
+                print(f"[DefectAnalyzer] Error detecting {defect_type}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
+
+        return defects
     
     def _analyze_image(self, image: np.ndarray, img_filename: str, session_id: int) -> List[Dict]:
         """
@@ -305,12 +494,12 @@ class DefectAnalyzer:
         
         # Determine severity
         severity = self._calculate_severity(area_pixels)
-        
+
         # Save defect crop
         crop_filename = self._save_defect_crop(
             image, mask, bbox, session_id, img_filename, defect_type
         )
-        
+
         return {
             'image_filename': img_filename,
             'defect_type': defect_type,
@@ -319,6 +508,7 @@ class DefectAnalyzer:
             'area_pixels': area_pixels,
             'confidence': float(score),
             'crop_filename': crop_filename,
+            'cropped': crop_filename is not None,
             'timestamp': datetime.now().isoformat()
         }
     
@@ -338,46 +528,68 @@ class DefectAnalyzer:
         bbox: List[int],
         session_id: int,
         img_filename: str,
-        defect_type: str
+        defect_type: str,
+        with_mask: bool = True
     ) -> str:
         """
-        Save cropped defect region with mask overlay
-        
+        Save cropped defect region as transparent PNG
+
+        Args:
+            image: Source image
+            mask: Segmentation mask
+            bbox: Bounding box [x, y, w, h]
+            session_id: Session ID
+            img_filename: Original image filename
+            defect_type: Defect type identifier
+            with_mask: If True, apply mask for transparency; if False, crop only
+
         Returns:
-            crop_filename: Filename of saved crop
+            crop_filename: Filename of saved PNG
         """
         x, y, w, h = bbox
-        
+
         # Ensure bbox is within image bounds
         h_img, w_img = image.shape[:2]
         x = max(0, min(x, w_img - 1))
         y = max(0, min(y, h_img - 1))
         w = min(w, w_img - x)
         h = min(h, h_img - y)
-        
+
         # Crop image
         crop = image[y:y+h, x:x+w].copy()
-        
-        # Crop mask
-        mask_crop = mask[y:y+h, x:x+w]
-        
-        # Overlay mask (semi-transparent red)
-        if crop.shape[0] > 0 and crop.shape[1] > 0:
-            crop[mask_crop > 0] = crop[mask_crop > 0] * 0.6 + np.array([0, 0, 255]) * 0.4
-        
+
         # Create defects directory
         defects_dir = f"data/sessions/{session_id}/defects"
         os.makedirs(defects_dir, exist_ok=True)
-        
+
         # Generate filename
         base_name = os.path.splitext(img_filename)[0]
         timestamp = int(time.time() * 1000)  # milliseconds
-        crop_filename = f"{defect_type}_{base_name}_{timestamp}.jpg"
+        crop_filename = f"{defect_type}_{base_name}_{timestamp}.png"
         crop_path = os.path.join(defects_dir, crop_filename)
-        
-        # Save crop
-        cv2.imwrite(crop_path, crop)
-        
+
+        # Create BGRA image with alpha channel
+        crop_bgra = cv2.cvtColor(crop, cv2.COLOR_BGR2BGRA)
+
+        if with_mask and mask is not None:
+            # Crop mask
+            mask_crop = mask[y:y+h, x:x+w]
+
+            # Resize mask if needed
+            if mask_crop.shape[:2] != crop_bgra.shape[:2]:
+                mask_crop = cv2.resize(mask_crop, (crop_bgra.shape[1], crop_bgra.shape[0]))
+
+            # Set alpha channel based on mask
+            # Pixels inside mask get alpha=255, outside get alpha=0
+            alpha = (mask_crop > 0).astype(np.uint8) * 255
+            crop_bgra[:, :, 3] = alpha
+        else:
+            # No transparency - fully opaque
+            crop_bgra[:, :, 3] = 255
+
+        # Save as PNG with alpha channel
+        cv2.imwrite(crop_path, crop_bgra)
+
         return crop_filename
 
     def _save_segmented_image(
@@ -385,45 +597,56 @@ class DefectAnalyzer:
         image: np.ndarray,
         defects: List[Dict],
         session_id: int,
-        image_filename: str
+        image_filename: str,
+        mask_data: Optional[Dict[str, np.ndarray]] = None
     ) -> str:
         """
-        Overlay all segmentation masks on original image with color coding
+        Overlay all segmentation masks on original image with defect-type colors
 
         Args:
             image: Original image as numpy array
-            defects: List of defects with bbox information
+            defects: List of defects with bbox and type information
             session_id: Session ID
             image_filename: Original image filename
+            mask_data: Optional pre-computed masks per defect type {type: mask_array}
 
         Returns:
             segmented_image_path: Path to saved segmented image
         """
-        # Create overlay image
-        overlay = image.copy()
+        # Create overlay image copy
+        overlay = np.zeros_like(image, dtype=np.float32)
 
-        # Define colors: BGR format with opacity
-        severity_colors = {
-            'critical': [0, 0, 255],      # Red
-            'moderate': [0, 255, 255],    # Yellow
-            'minor': [0, 255, 0]          # Green
-        }
+        # Use defect-type colors from Config
+        defect_colors = Config.DEFECT_COLORS
 
-        # Create a blank mask canvas for each severity
+        # Apply masks for each defect
         for defect in defects:
-            severity = defect['severity']
+            defect_type = defect['defect_type']
             bbox = defect['bbox']
             x, y, w, h = bbox
 
-            # Create mask for this defect region
-            # For simplicity, we'll use bounding box rectangle with semi-transparent fill
-            # In a full implementation, you would use the actual mask from SAM-3
-            color = severity_colors.get(severity, [255, 255, 255])
-            cv2.rectangle(overlay, (x, y), (x + w, y + h), color, 2)
-            cv2.rectangle(overlay, (x, y), (x + w, y + h), color, -1)
+            # Get color for this defect type
+            color = defect_colors.get(defect_type, [255, 255, 255])
 
-        # Blend overlay with original image (40% opacity)
-        result = cv2.addWeighted(image, 0.6, overlay, 0.4, 0)
+            # If mask_data is provided, use actual masks
+            if mask_data and defect_type in mask_data:
+                mask = mask_data[defect_type]
+                # Resize mask to match image if needed
+                if mask.shape[:2] != image.shape[:2]:
+                    mask = cv2.resize(mask, (image.shape[1], image.shape[0]))
+
+                # Apply mask overlay with defect color
+                for c in range(3):
+                    overlay[:, :, c] += (mask / 255.0) * color[c]
+            else:
+                # Fallback: use bounding box rectangle
+                cv2.rectangle(overlay, (x, y), (x + w, y + h), color, 2)
+
+        # Clip overlay values to valid range
+        overlay = np.clip(overlay, 0, 255).astype(np.uint8)
+
+        # Blend overlay with original image (50% overlay, 50% original)
+        result = cv2.addWeighted(image, 0.5, overlay, 0.5, 0)
 
         # Save to segmented subdirectory
         segmented_dir = f"data/sessions/{session_id}/segmented"
@@ -495,6 +718,70 @@ class DefectAnalyzer:
 
         self._save_segmented_image(image, defects, session_id, image_filename)
         print(f"[DefectAnalyzer] Generated segmented image: {image_filename}")
+
+    def crop_and_store_defects(
+        self,
+        session_id: int,
+        image_filename: str,
+        defects: List[Dict],
+        mask_data: Optional[Dict[str, np.ndarray]] = None
+    ) -> List[str]:
+        """
+        Generate and store cropped PNGs for defects
+
+        Args:
+            session_id: Session ID
+            image_filename: Original image filename
+            defects: List of defect dictionaries
+            mask_data: Optional pre-computed masks per defect type
+
+        Returns:
+            crop_filenames: List of generated crop filenames
+        """
+        # Load original image
+        captures_dir = f"data/sessions/{session_id}/captures"
+        img_path = os.path.join(captures_dir, image_filename)
+        image = cv2.imread(img_path)
+
+        if image is None:
+            print(f"[DefectAnalyzer] Failed to load image: {img_path}")
+            return []
+
+        crop_filenames = []
+
+        for defect in defects:
+            # Check if already cropped
+            if defect.get('cropped', False):
+                if defect.get('crop_filename'):
+                    crop_filenames.append(defect['crop_filename'])
+                continue
+
+            defect_type = defect['defect_type']
+            bbox = defect['bbox']
+
+            # Get mask for this defect type if available
+            mask = None
+            if mask_data and defect_type in mask_data:
+                mask = mask_data[defect_type]
+
+            # Generate crop filename
+            base_name = os.path.splitext(image_filename)[0]
+            timestamp = int(time.time() * 1000) + len(crop_filenames)
+            crop_filename = f"{defect_type}_{base_name}_{timestamp}.png"
+
+            # Generate crop
+            generated_filename = self._save_defect_crop(
+                image, mask, bbox, session_id, image_filename, defect_type, with_mask=True
+            )
+
+            # Update defect entry
+            defect['crop_filename'] = generated_filename
+            defect['cropped'] = True
+
+            crop_filenames.append(generated_filename)
+
+        print(f"[DefectAnalyzer] Generated {len(crop_filenames)} cropped PNGs for {image_filename}")
+        return crop_filenames
 
 
 # Global instance (lazy loaded)
