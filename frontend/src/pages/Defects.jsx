@@ -1,18 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-const DEFECT_COLORS = {
-  scratch: '#FF0000',
-  dent: '#00FF00',
-  rust: '#FFA500',
-  hole: '#FFFF00',
-  coating_bubble: '#FF00FF',
-  oil_stain: '#0000FF',
-  discoloration: '#808080',
-  pitting: '#FFC0CB',
-  edge_burr: '#A52A2A',
-  warping: '#00FFFF'
-};
-
 const DEFECT_TYPES = [
   { id: 'scratch', label: 'Scratches', prompt: 'linear scratch mark on metal surface' },
   { id: 'dent', label: 'Dents', prompt: 'dent or deformation on metal sheet' },
@@ -52,7 +39,6 @@ const Defects = () => {
   const [selectedImageDefects, setSelectedImageDefects] = useState(null);
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState(null);
-  const [isCropping, setIsCropping] = useState(false);
 
   useEffect(() => {
     fetchSessions();
@@ -113,57 +99,6 @@ const Defects = () => {
   const handleCropClick = (defect) => {
     setSelectedCrop(defect);
     setShowCropModal(true);
-  };
-
-  const handleCropDefect = async (defect) => {
-    if (!selectedSession) return;
-
-    setIsCropping(true);
-    try {
-      const response = await fetch(`/api/sessions/${selectedSession.id}/crop_defects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_filename: defect.image_filename })
-      });
-      const data = await response.json();
-
-      if (data.status === 'completed') {
-        await fetchDefects(selectedSession.id);
-      } else {
-        alert('Crop failed: ' + (data.error || 'Unknown error'));
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Crop error: ' + err.message);
-    } finally {
-      setIsCropping(false);
-    }
-  };
-
-  const handleCropDefectsForImage = async (imageDefects) => {
-    if (!selectedSession) return;
-
-    setIsCropping(true);
-    try {
-      const response = await fetch(`/api/sessions/${selectedSession.id}/crop_defects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_filename: imageDefects.filename })
-      });
-      const data = await response.json();
-
-      if (data.status === 'completed') {
-        await fetchDefects(selectedSession.id);
-        alert(`Cropped ${data.crop_count} defect(s)`);
-      } else {
-        alert('Crop failed: ' + (data.error || 'Unknown error'));
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Crop error: ' + err.message);
-    } finally {
-      setIsCropping(false);
-    }
   };
 
   const fetchSessions = async () => {
@@ -480,7 +415,7 @@ const Defects = () => {
                     </svg>
                     Detected Defects
                   </h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {defects.map((defect, idx) => (
                       <div key={idx} className="bg-black/20 rounded-lg overflow-hidden border border-white/10 hover:border-primary transition-colors group">
                         <div className="relative aspect-square">
@@ -721,7 +656,6 @@ const Defects = () => {
                         : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
                     }`}
                   >
-                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: DEFECT_COLORS[defect.id] }} />
                     <div className={`w-5 h-5 rounded border flex items-center justify-center ${
                       selectedDefectTypes.includes(defect.id)
                         ? 'bg-primary border-primary'
@@ -844,19 +778,11 @@ const Defects = () => {
                       className="bg-white/5 border border-white/10 rounded-lg overflow-hidden hover:border-primary transition-all group"
                     >
                       <div className="relative aspect-square">
-                        {defect.cropped && defect.crop_filename ? (
-                          <img
-                            src={`/api/sessions/${selectedSession.id}/defects/${defect.crop_filename}`}
-                            alt={defect.defect_type}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                            <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                        )}
+                        <img
+                          src={`/api/sessions/${selectedSession.id}/defects/${defect.crop_filename}`}
+                          alt={defect.defect_type}
+                          className="w-full h-full object-cover"
+                        />
                         <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${
                           defect.severity === 'critical' ? 'bg-red-500' :
                           defect.severity === 'moderate' ? 'bg-yellow-500' :
@@ -870,37 +796,10 @@ const Defects = () => {
                         <div className="text-xs text-gray-400">
                           {(defect.confidence * 100).toFixed(0)}%
                         </div>
-                        {!defect.cropped && (
-                          <div className="text-xs text-yellow-400 mt-1">
-                            Not cropped
-                          </div>
-                        )}
                       </div>
                     </button>
                   ))}
                 </div>
-                <button
-                  onClick={() => handleCropDefectsForImage(selectedImageDefects)}
-                  disabled={isCropping || selectedImageDefects.defects.every(d => d.cropped)}
-                  className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  {isCropping ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                      </svg>
-                      <span>Cropping...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      <span>Crop Segmentation</span>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </div>
