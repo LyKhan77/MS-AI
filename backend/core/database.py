@@ -260,5 +260,19 @@ class Database:
         for defect in defects:
             severity = defect.get('severity', 'minor')
             stats[severity] = stats.get(severity, 0) + 1
-        
+
         return stats
+
+    def get_defects_by_image(self, session_id, image_filename):
+        """
+        Get all defects for a specific image from a session
+
+        Args:
+            session_id: Session ID
+            image_filename: Image filename
+
+        Returns:
+            defects: List of defect dictionaries for specified image
+        """
+        defects = self.get_session_defects(session_id)
+        return [d for d in defects if d.get('image_filename') == image_filename]

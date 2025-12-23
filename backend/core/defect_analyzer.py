@@ -61,7 +61,10 @@ class DefectAnalyzer:
         
         # Confidence threshold
         self.confidence_threshold = 0.5
-        
+
+        # Cache for segmented images
+        self.segmented_cache = {}
+
         print(f"[DefectAnalyzer] Initialized on device: {self.device}")
     
     def load_model(self):
@@ -169,6 +172,10 @@ class DefectAnalyzer:
 
             results['defects'].extend(defects)
             results['defects_found'] += len(defects)
+
+            # Generate segmented image with masks overlaid
+            if defects:
+                self._save_segmented_image(image, defects, session_id, img_file)
 
         results['processing_time'] = time.time() - start_time
 
@@ -372,6 +379,122 @@ class DefectAnalyzer:
         cv2.imwrite(crop_path, crop)
         
         return crop_filename
+
+    def _save_segmented_image(
+        self,
+        image: np.ndarray,
+        defects: List[Dict],
+        session_id: int,
+        image_filename: str
+    ) -> str:
+        """
+        Overlay all segmentation masks on original image with color coding
+
+        Args:
+            image: Original image as numpy array
+            defects: List of defects with bbox information
+            session_id: Session ID
+            image_filename: Original image filename
+
+        Returns:
+            segmented_image_path: Path to saved segmented image
+        """
+        # Create overlay image
+        overlay = image.copy()
+
+        # Define colors: BGR format with opacity
+        severity_colors = {
+            'critical': [0, 0, 255],      # Red
+            'moderate': [0, 255, 255],    # Yellow
+            'minor': [0, 255, 0]          # Green
+        }
+
+        # Create a blank mask canvas for each severity
+        for defect in defects:
+            severity = defect['severity']
+            bbox = defect['bbox']
+            x, y, w, h = bbox
+
+            # Create mask for this defect region
+            # For simplicity, we'll use bounding box rectangle with semi-transparent fill
+            # In a full implementation, you would use the actual mask from SAM-3
+            color = severity_colors.get(severity, [255, 255, 255])
+            cv2.rectangle(overlay, (x, y), (x + w, y + h), color, 2)
+            cv2.rectangle(overlay, (x, y), (x + w, y + h), color, -1)
+
+        # Blend overlay with original image (40% opacity)
+        result = cv2.addWeighted(image, 0.6, overlay, 0.4, 0)
+
+        # Save to segmented subdirectory
+        segmented_dir = f"data/sessions/{session_id}/segmented"
+        os.makedirs(segmented_dir, exist_ok=True)
+
+        segmented_filename = f"segmented_{image_filename}"
+        segmented_path = os.path.join(segmented_dir, segmented_filename)
+        cv2.imwrite(segmented_path, result)
+
+        # Cache the path
+        if session_id not in self.segmented_cache:
+            self.segmented_cache[session_id] = {}
+        self.segmented_cache[session_id][image_filename] = segmented_path
+
+        return segmented_path
+
+    def get_session_segmented_images(self, session_id: int) -> Dict[str, str]:
+        """
+        Get cached segmented image paths for a session
+
+        Args:
+            session_id: Session ID
+
+        Returns:
+            Dict mapping filename -> segmented image path
+        """
+        if session_id in self.segmented_cache:
+            return self.segmented_cache[session_id]
+
+        # Load from filesystem if not in cache
+        segmented_dir = f"data/sessions/{session_id}/segmented"
+        if not os.path.exists(segmented_dir):
+            return {}
+
+        files = [f for f in os.listdir(segmented_dir)
+                  if f.startswith('segmented_')]
+
+        self.segmented_cache[session_id] = {
+            f.replace('segmented_', ''): os.path.join(segmented_dir, f)
+            for f in files
+        }
+        return self.segmented_cache[session_id]
+
+    def generate_segmented_for_image(
+        self,
+        session_id: int,
+        image_filename: str,
+        defects: List[Dict]
+    ):
+        """
+        Generate segmented image for a specific image with its defects
+
+        Args:
+            session_id: Session ID
+            image_filename: Image filename
+            defects: List of defects for this image
+        """
+        if not defects:
+            print(f"[DefectAnalyzer] No defects to generate segmented image for: {image_filename}")
+            return
+
+        captures_dir = f"data/sessions/{session_id}/captures"
+        img_path = os.path.join(captures_dir, image_filename)
+        image = cv2.imread(img_path)
+
+        if image is None:
+            print(f"[DefectAnalyzer] Failed to load image: {img_path}")
+            return
+
+        self._save_segmented_image(image, defects, session_id, image_filename)
+        print(f"[DefectAnalyzer] Generated segmented image: {image_filename}")
 
 
 # Global instance (lazy loaded)

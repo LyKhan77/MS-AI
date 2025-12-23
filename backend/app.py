@@ -403,6 +403,30 @@ def get_defect_crop(session_id, filename):
     return send_from_directory(defects_dir, filename)
 
 
+@app.route('/api/sessions/<session_id>/defects/segmented/<filename>', methods=['GET'])
+def get_segmented_image(session_id, filename):
+    """
+    Serve segmented image with overlays
+
+    GET /api/sessions/<session_id>/defects/segmented/<filename>
+    """
+    from flask import send_from_directory
+    from core.defect_analyzer import get_defect_analyzer
+
+    segmented_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'segmented')
+    segmented_filename = f"segmented_{filename}"
+
+    # Check if segmented image exists
+    if not os.path.exists(os.path.join(segmented_dir, segmented_filename)):
+        # Generate on-demand if not exists
+        defects = db.get_defects_by_image(session_id, filename)
+        if defects:
+            analyzer = get_defect_analyzer()
+            analyzer.generate_segmented_for_image(session_id, filename, defects)
+
+    return send_from_directory(segmented_dir, segmented_filename)
+
+
 # ============================================================
 # Socket.IO Handlers
 # ============================================================

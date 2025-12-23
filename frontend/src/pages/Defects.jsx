@@ -33,6 +33,12 @@ const Defects = () => {
     }
   });
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+  const [viewMode, setViewMode] = useState('image');
+  const [groupedDefects, setGroupedDefects] = useState([]);
+  const [showDefectDetailModal, setShowDefectDetailModal] = useState(false);
+  const [selectedImageDefects, setSelectedImageDefects] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedCrop, setSelectedCrop] = useState(null);
 
   useEffect(() => {
     fetchSessions();
@@ -67,6 +73,34 @@ const Defects = () => {
     setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
   };
 
+  const groupDefectsByImage = (defectsList) => {
+    const groups = {};
+    defectsList.forEach(defect => {
+      if (!groups[defect.image_filename]) {
+        groups[defect.image_filename] = [];
+      }
+      groups[defect.image_filename].push(defect);
+    });
+
+    return Object.entries(groups)
+      .map(([filename, defectsList]) => ({ filename, defects: defectsList, count: defectsList.length }))
+      .sort((a, b) => a.filename.localeCompare(b.filename));
+  };
+
+  const handleViewModeToggle = (mode) => {
+    setViewMode(mode);
+  };
+
+  const handleImageClick = (imageDefects) => {
+    setSelectedImageDefects(imageDefects);
+    setShowDefectDetailModal(true);
+  };
+
+  const handleCropClick = (defect) => {
+    setSelectedCrop(defect);
+    setShowCropModal(true);
+  };
+
   const fetchSessions = async () => {
     setLoading(true);
     try {
@@ -89,6 +123,7 @@ const Defects = () => {
         by_type: data.stats_by_type || {},
         by_severity: data.stats_by_severity || {}
       });
+      setGroupedDefects(groupDefectsByImage(data.defects || []));
     } catch (err) {
       console.error('Failed to fetch defects:', err);
     }
@@ -271,7 +306,30 @@ const Defects = () => {
                   </p>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleViewModeToggle('image')}
+                    className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                      viewMode === 'image'
+                        ? 'bg-primary text-white'
+                        : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                    }`}
+                  >
+                    Image View
+                  </button>
+                  <button
+                    onClick={() => handleViewModeToggle('crops')}
+                    className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                      viewMode === 'crops'
+                        ? 'bg-primary text-white'
+                        : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                    }`}
+                  >
+                    Crop List
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowConfigModal(true)}
                   className="flex-1 sm:flex-none px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white font-medium transition-all text-sm flex items-center justify-center gap-2"
@@ -318,6 +376,7 @@ const Defects = () => {
                     <span>Export ZIP</span>
                   </button>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -348,43 +407,86 @@ const Defects = () => {
               )}
 
               {/* Defect Gallery */}
-              <div className="bg-white/5 border border-white/10 rounded-lg p-4 md:p-6">
-                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Detected Defects
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {defects.map((defect, idx) => (
-                    <div key={idx} className="bg-black/20 rounded-lg overflow-hidden border border-white/10 hover:border-primary transition-colors group">
+              {viewMode === 'crops' ? (
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4 md:p-6">
+                  <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Detected Defects
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {defects.map((defect, idx) => (
+                      <div key={idx} className="bg-black/20 rounded-lg overflow-hidden border border-white/10 hover:border-primary transition-colors group">
+                        <div className="relative aspect-square">
+                          <img
+                            src={`/api/sessions/${selectedSession.id}/defects/${defect.crop_filename}`}
+                            alt={`${defect.defect_type} defect`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23333" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" fill="%23666" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
+                            }}
+                          />
+                          <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${
+                            defect.severity === 'critical' ? 'bg-red-500' :
+                            defect.severity === 'moderate' ? 'bg-yellow-500' :
+                            'bg-green-500'
+                          }`} />
+                        </div>
+                        <div className="p-2">
+                          <div className="text-xs font-semibold text-white truncate capitalize">
+                            {defect.defect_type.replace('_', ' ')}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {(defect.confidence * 100).toFixed(0)}% • {defect.area_pixels}px²
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                // Image View - 2-column grid
+                <div className="grid grid-cols-2 gap-4">
+                  {groupedDefects.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleImageClick(img)}
+                      className="bg-white/5 border border-white/10 rounded-lg overflow-hidden hover:border-primary transition-all group text-left"
+                    >
                       <div className="relative aspect-square">
-                        <img 
-                          src={`/api/sessions/${selectedSession.id}/defects/${defect.crop_filename}`}
-                          alt={`${defect.defect_type} defect`}
+                        <img
+                          src={`/api/sessions/${selectedSession.id}/defects/segmented/${img.filename}`}
+                          alt={img.filename}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23333" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" fill="%23666" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
+                            e.target.src = `/api/sessions/${selectedSession.id}/captures/${img.filename}`;
                           }}
                         />
-                        <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${
-                          defect.severity === 'critical' ? 'bg-red-500' :
-                          defect.severity === 'moderate' ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`} />
-                      </div>
-                      <div className="p-2">
-                        <div className="text-xs font-semibold text-white truncate capitalize">
-                          {defect.defect_type.replace('_', ' ')}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {(defect.confidence * 100).toFixed(0)}% • {defect.area_pixels}px²
+                        <div className="absolute top-2 right-2 px-2 py-1 bg-black/70 rounded text-xs text-white">
+                          {img.count} defects
                         </div>
                       </div>
-                    </div>
+                      <div className="p-3">
+                        <div className="text-xs text-gray-400 truncate mb-1">
+                          {img.filename}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          {img.defects.some(d => d.severity === 'critical') && (
+                            <span className="text-red-400">● Critical</span>
+                          )}
+                          {img.defects.some(d => d.severity === 'moderate') && (
+                            <span className="text-yellow-400">● Moderate</span>
+                          )}
+                          {img.defects.some(d => d.severity === 'minor') && (
+                            <span className="text-green-400">● Minor</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
                   ))}
                 </div>
-              </div>
+              )}
             </>
           ) : selectedSession ? (
             selectedSession.defects_analyzed > 0 && selectedSession.defects_found === 0 ? (
@@ -623,6 +725,139 @@ const Defects = () => {
               </svg>
             )}
             <span className="text-sm font-medium">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Defect Detail Modal */}
+      {showDefectDetailModal && selectedImageDefects && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDefectDetailModal(false)}>
+          <div className="bg-[#1a1a2e] border border-white/10 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowDefectDetailModal(false)}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-gray-400 z-10"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Left Panel - Segmented Image */}
+            <div className="w-1/2 flex flex-col border-r border-white/10 min-h-0">
+              <div className="p-4 border-b border-white/10 bg-white/5">
+                <h3 className="text-lg font-semibold text-white truncate">
+                  {selectedImageDefects.filename}
+                </h3>
+                <p className="text-sm text-gray-400">
+                  {selectedImageDefects.count} defects detected
+                </p>
+              </div>
+              <div className="flex-1 p-4 flex items-center justify-center">
+                <img
+                  src={`/api/sessions/${selectedSession.id}/defects/segmented/${selectedImageDefects.filename}`}
+                  alt="Segmented"
+                  className="max-w-full max-h-full object-contain rounded"
+                  onError={(e) => {
+                    e.target.src = `/api/sessions/${selectedSession.id}/captures/${selectedImageDefects.filename}`;
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Right Panel - Crop Grid */}
+            <div className="w-1/2 flex flex-col min-h-0">
+              <div className="p-4 border-b border-white/10 bg-white/5">
+                <h3 className="text-lg font-semibold text-white">Detected Regions</h3>
+              </div>
+              <div className="flex-1 p-4 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3">
+                  {selectedImageDefects.defects.map((defect, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleCropClick(defect)}
+                      className="bg-white/5 border border-white/10 rounded-lg overflow-hidden hover:border-primary transition-all group"
+                    >
+                      <div className="relative aspect-square">
+                        <img
+                          src={`/api/sessions/${selectedSession.id}/defects/${defect.crop_filename}`}
+                          alt={defect.defect_type}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${
+                          defect.severity === 'critical' ? 'bg-red-500' :
+                          defect.severity === 'moderate' ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        }`} />
+                      </div>
+                      <div className="p-2">
+                        <div className="text-xs font-semibold text-white truncate capitalize">
+                          {defect.defect_type.replace('_', ' ')}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {(defect.confidence * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged Crop Modal */}
+      {showCropModal && selectedCrop && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => setShowCropModal(false)}>
+          <div className="max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={`/api/sessions/${selectedSession.id}/defects/${selectedCrop.crop_filename}`}
+              alt={selectedCrop.defect_type}
+              className="w-full rounded-lg"
+            />
+            <div className="mt-3 bg-white/5 border border-white/10 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white capitalize">
+                    {selectedCrop.defect_type.replace('_', ' ')}
+                  </h3>
+                  <p className="text-sm text-gray-400">
+                    {selectedCrop.image_filename}
+                  </p>
+                </div>
+                <div className={`px-3 py-1 rounded text-sm font-semibold ${
+                  selectedCrop.severity === 'critical' ? 'bg-red-500/20 text-red-400' :
+                  selectedCrop.severity === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-green-500/20 text-green-400'
+                }`}>
+                  {selectedCrop.severity.toUpperCase()}
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-400">Confidence</span>
+                  <div className="text-white font-semibold">
+                    {(selectedCrop.confidence * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Area</span>
+                  <div className="text-white font-semibold">
+                    {selectedCrop.area_pixels}px²
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Severity</span>
+                  <div className={`font-semibold ${
+                    selectedCrop.severity === 'critical' ? 'text-red-400' :
+                    selectedCrop.severity === 'moderate' ? 'text-yellow-400' :
+                    'text-green-400'
+                  }`}>
+                    {selectedCrop.severity.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
