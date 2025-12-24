@@ -8,11 +8,11 @@ export default defineConfig({
     host: true, // Exposes to network (0.0.0.0)
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://192.168.2.132:5000',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://localhost:5000',
+        target: 'http://192.168.2.132:5000',
         ws: true
       }
     }
