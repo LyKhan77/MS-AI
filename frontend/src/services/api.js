@@ -17,6 +17,7 @@ export const uploadVideo = (formData) => API.post('/upload', formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const stopCamera = () => API.post('/camera/stop');
+export const deleteUploadedVideo = () => API.post('/upload/delete');
 
 // Playback endpoints
 export const pausePlayback = () => API.post('/playback/pause');

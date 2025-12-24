@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 
-const LiveStream = ({ onCountUpdate }) => {
+const LiveStream = ({ onCountUpdate, forceClear }) => {
   const [frame, setFrame] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef(null);
@@ -11,6 +11,13 @@ const LiveStream = ({ onCountUpdate }) => {
   useEffect(() => {
     onCountUpdateRef.current = onCountUpdate;
   }, [onCountUpdate]);
+
+  // Handle force clear prop
+  useEffect(() => {
+    if (forceClear) {
+      setFrame(null);
+    }
+  }, [forceClear]);
 
   useEffect(() => {
     // Initialize Socket.IO connection
@@ -45,15 +52,18 @@ const LiveStream = ({ onCountUpdate }) => {
 
   return (
     <div className="relative w-full h-full bg-black rounded-lg overflow-hidden border-2 border-primary shadow-lg shadow-blue-900/20">
-      {!isConnected && (
-        <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-          Connecting to Stream...
+      {!frame && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-3 opacity-50">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
+          </svg>
+          <span className="text-sm">No input source loaded</span>
         </div>
       )}
       {frame && (
-        <img 
-          src={frame} 
-          alt="Live Stream" 
+        <img
+          src={frame}
+          alt="Live Stream"
           className="w-full h-full object-contain"
         />
       )}

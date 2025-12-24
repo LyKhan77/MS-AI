@@ -262,6 +262,33 @@ def stop_camera():
     return jsonify({"status": "stopped"})
 
 
+@app.route('/api/upload/delete', methods=['POST'])
+def delete_uploaded_video():
+    """Delete the currently uploaded video file(s)"""
+    videos_dir = os.path.join(Config.DATA_DIR, 'videos')
+    
+    if not os.path.exists(videos_dir):
+        return jsonify({"status": "no_videos", "message": "No videos directory found"})
+    
+    deleted_count = 0
+    video_extensions = ('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm')
+    
+    for filename in os.listdir(videos_dir):
+        if filename.lower().endswith(video_extensions):
+            filepath = os.path.join(videos_dir, filename)
+            try:
+                os.remove(filepath)
+                deleted_count += 1
+                print(f"[API] Deleted uploaded video: {filename}")
+            except Exception as e:
+                print(f"[API] Error deleting {filename}: {e}")
+    
+    return jsonify({
+        "status": "deleted",
+        "count": deleted_count
+    })
+
+
 # ============================================================
 # Defect Analysis Endpoints (SAM-3)
 # ============================================================

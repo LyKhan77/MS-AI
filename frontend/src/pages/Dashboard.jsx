@@ -9,6 +9,7 @@ import {
   setSource,
   uploadVideo,
   stopCamera,
+  deleteUploadedVideo,
   pausePlayback,
   resumePlayback,
   seekPlayback,
@@ -68,14 +69,6 @@ const Dashboard = () => {
   useEffect(() => {
     saveSettings({ sessionName, maxCount, confidenceThreshold });
   }, [sessionName, maxCount, confidenceThreshold]);
-
-  // Auto-stop when count reaches max
-  useEffect(() => {
-    if (isSessionActive && currentCount >= maxCount) {
-      warning(`Max count (${maxCount}) reached! Stopping session...`);
-      handleStop();
-    }
-  }, [currentCount, maxCount, isSessionActive]);
 
   // Poll playback info when in video mode (reduced from 500ms to 1s)
   useEffect(() => {
@@ -243,15 +236,18 @@ const Dashboard = () => {
     setConfirmDialog({
       isOpen: true,
       title: 'Remove Video',
-      message: 'Are you sure you want to remove the uploaded video? The camera will be stopped.',
+      message: 'Are you sure you want to remove the uploaded video? The camera will be stopped and the video file will be deleted.',
       onConfirm: async () => {
         setIsLoading(prev => ({ ...prev, remove: true }));
         setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: null });
 
         try {
+          // Stop camera stream
           await stopCamera();
+          // Delete the uploaded video file from server
+          await deleteUploadedVideo();
         } catch (err) {
-          console.error('Failed to stop camera:', err);
+          console.error('Failed to stop camera or delete video:', err);
         } finally {
           setUploadedFile(null);
           setPlaybackState({
@@ -266,7 +262,7 @@ const Dashboard = () => {
           }
 
           setIsLoading(prev => ({ ...prev, remove: false }));
-          success('Video removed');
+          success('Video removed and deleted');
         }
       }
     });
@@ -276,15 +272,7 @@ const Dashboard = () => {
   const handleRemoveVideo = handleRemoveFile;
 
   const handleRefresh = () => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Refresh Dashboard',
-      message: 'This will clear all cached data and reload the page. Any unsaved work will be lost. Continue?',
-      onConfirm: () => {
-        setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: null });
-        window.location.reload();
-      }
-    });
+    window.location.reload();
   };
 
   const handlePlayPause = async () => {
@@ -344,7 +332,7 @@ const Dashboard = () => {
         {/* Left Column: Video Feed */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           <div className="flex-1 min-h-[400px]">
-            <LiveStream onCountUpdate={setCurrentCount} />
+            <LiveStream onCountUpdate={setCurrentCount} forceClear={uploadedFile === null} />
           </div>
 
           {/* Source Controls */}
@@ -442,7 +430,7 @@ const Dashboard = () => {
                       className="p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors shrink-0 disabled:opacity-50"
                       title="Remove video"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 6"/><path d="m6 6 12 12"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                   </div>
                 )}
