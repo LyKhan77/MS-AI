@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { ToastProvider } from './components/Toast';
 import Dashboard from './pages/Dashboard';
 import Sessions from './pages/Sessions';
 import Dimensions from './pages/Dimensions';
@@ -136,9 +137,11 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

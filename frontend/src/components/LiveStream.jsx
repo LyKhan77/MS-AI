@@ -5,6 +5,12 @@ const LiveStream = ({ onCountUpdate }) => {
   const [frame, setFrame] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef(null);
+  const onCountUpdateRef = useRef(onCountUpdate);
+
+  // Keep ref updated without causing reconnection
+  useEffect(() => {
+    onCountUpdateRef.current = onCountUpdate;
+  }, [onCountUpdate]);
 
   useEffect(() => {
     // Initialize Socket.IO connection
@@ -24,15 +30,18 @@ const LiveStream = ({ onCountUpdate }) => {
     socketRef.current.on('video_frame', (data) => {
       // data contains { image: base64..., count: 123 }
       setFrame(`data:image/jpeg;base64,${data.image}`);
-      if (onCountUpdate) {
-        onCountUpdate(data.count);
+      if (onCountUpdateRef.current) {
+        onCountUpdateRef.current(data.count);
       }
     });
 
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
-  }, [onCountUpdate]);
+  }, []); // Empty dependency array - only connect once
 
   return (
     <div className="relative w-full h-full bg-black rounded-lg overflow-hidden border-2 border-primary shadow-lg shadow-blue-900/20">
