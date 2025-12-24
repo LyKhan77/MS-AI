@@ -34,6 +34,12 @@ const Defects = () => {
     }
   });
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState({
+    title: '',
+    message: '',
+    onConfirm: null
+  });
 
   useEffect(() => {
     fetchSessions();
@@ -133,7 +139,12 @@ const Defects = () => {
     }
   };
 
-  const handleRunSegmentation = async () => {
+  const showConfirmDialog = (title, message, onConfirm) => {
+    setConfirmModalData({ title, message, onConfirm });
+    setShowConfirmModal(true);
+  };
+
+  const handleRunSegmentationClick = () => {
     if (!selectedSession) {
       showToast('Please select a session first', 'error');
       return;
@@ -147,16 +158,23 @@ const Defects = () => {
     // Check if session already has analysis
     const alreadyAnalyzed = selectedSession.defects_analyzed > 0;
 
-    // Show confirmation dialog
-    let confirmMessage = `Run defect analysis on "${selectedSession.name}"?\n\nThis may take several minutes depending on the number of captures.`;
     if (alreadyAnalyzed) {
-      confirmMessage = `This session has already been analyzed (${selectedSession.defects_found} defects found).\n\nRe-running will REPLACE all existing defect results.\n\nDo you want to continue?`;
+      showConfirmDialog(
+        'Re-run Defect Analysis?',
+        `This session has already been analyzed (${selectedSession.defects_found} defects found).\n\nRe-running will REPLACE all existing defect results.\n\nDo you want to continue?`,
+        executeRunSegmentation
+      );
+    } else {
+      showConfirmDialog(
+        'Run Defect Analysis?',
+        `Run defect analysis on "${selectedSession.name}"?\n\nThis may take several minutes depending on the number of captures.`,
+        executeRunSegmentation
+      );
     }
+  };
 
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
+  const executeRunSegmentation = async () => {
+    setShowConfirmModal(false);
     setIsAnalyzing(true);
     try {
       const response = await fetch(`/api/sessions/${selectedSession.id}/analyze_defects`, {
@@ -348,7 +366,7 @@ const Defects = () => {
                   )}
                 </button>
                 <button
-                  onClick={handleRunSegmentation}
+                  onClick={handleRunSegmentationClick}
                   disabled={isAnalyzing || !selectedSession}
                   className="flex-1 sm:flex-none px-4 py-2 bg-primary hover:bg-secondary rounded-lg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2"
                 >
@@ -754,6 +772,46 @@ const Defects = () => {
               </svg>
             )}
             <span className="text-sm font-medium">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => setShowConfirmModal(false)}>
+          <div className="bg-[#1a1a2e] border border-white/10 rounded-lg max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-4 border-b border-white/10 bg-white/5">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {confirmModalData.title}
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-300 whitespace-pre-line text-sm leading-relaxed">
+                {confirmModalData.message}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white font-medium transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => confirmModalData.onConfirm && confirmModalData.onConfirm()}
+                className="px-4 py-2 bg-primary hover:bg-secondary rounded-lg text-white font-medium transition-colors text-sm"
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}
