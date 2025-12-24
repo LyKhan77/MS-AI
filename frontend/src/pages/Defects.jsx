@@ -144,7 +144,16 @@ const Defects = () => {
       return;
     }
 
-    if (!confirm(`Run defect analysis on "${selectedSession.name}"?\n\nThis may take several minutes depending on the number of captures.`)) {
+    // Check if session already has analysis
+    const alreadyAnalyzed = selectedSession.defects_analyzed > 0;
+
+    // Show confirmation dialog
+    let confirmMessage = `Run defect analysis on "${selectedSession.name}"?\n\nThis may take several minutes depending on the number of captures.`;
+    if (alreadyAnalyzed) {
+      confirmMessage = `This session has already been analyzed (${selectedSession.defects_found} defects found).\n\nRe-running will REPLACE all existing defect results.\n\nDo you want to continue?`;
+    }
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -153,9 +162,47 @@ const Defects = () => {
       const response = await fetch(`/api/sessions/${selectedSession.id}/analyze_defects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defect_types: selectedDefectTypes })
+        body: JSON.stringify({
+          defect_types: selectedDefectTypes,
+          force: true // Allow re-analysis
+        })
       });
       const data = await response.json();
+
+      if (response.status === 409) {
+        // Session already analyzed - show more detailed warning
+        if (confirm(data.message + '\n\nClick OK to replace existing results, or Cancel to keep them.')) {
+          // User confirmed, retry with force=true
+          setIsAnalyzing(true);
+          const retryResponse = await fetch(`/api/sessions/${selectedSession.id}/analyze_defects`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              defect_types: selectedDefectTypes,
+              force: true
+            })
+          });
+          const retryData = await retryResponse.json();
+
+          if (retryData.status === 'completed') {
+            setDefects(retryData.results.defects || []);
+
+            if (retryData.results.defects_found === 0) {
+              alert(`Analysis Complete!\n\nNo defects detected\nMetal sheets are safe\nSession quality: PASS\n\nProcessing time: ${retryData.results.processing_time.toFixed(1)}s`);
+            } else {
+              alert(`Analysis complete!\n\nFound ${retryData.results.defects_found} defects in ${retryData.results.processing_time.toFixed(1)}s\n\nReview defects below.`);
+            }
+
+            await fetchGroupedDefects(selectedSession.id);
+            await fetchDefects(selectedSession.id);
+            await fetchSessions();
+          } else {
+            alert('Analysis failed: ' + (retryData.error || 'Unknown error'));
+          }
+        }
+        setIsAnalyzing(false);
+        return;
+      }
 
       if (data.status === 'completed') {
         setDefects(data.results.defects || []);

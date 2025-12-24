@@ -126,6 +126,34 @@ class DefectAnalyzer:
             raise RuntimeError(f"SAM-3 model loading failed. Defect analysis cannot proceed. {e}")
 
     
+    def cleanup_previous_analysis(self, session_id: int):
+        """
+        Clean up previous defect analysis files for a session
+
+        Args:
+            session_id: Session ID
+        """
+        import shutil
+
+        defects_dir = f"data/sessions/{session_id}/defects"
+        segmented_dir = f"data/sessions/{session_id}/segmented"
+
+        # Clean up defects directory
+        if os.path.exists(defects_dir):
+            try:
+                shutil.rmtree(defects_dir)
+                print(f"[DefectAnalyzer] Cleaned up defects directory: {defects_dir}")
+            except Exception as e:
+                print(f"[DefectAnalyzer] Warning: Could not clean defects directory: {e}")
+
+        # Clean up segmented directory
+        if os.path.exists(segmented_dir):
+            try:
+                shutil.rmtree(segmented_dir)
+                print(f"[DefectAnalyzer] Cleaned up segmented directory: {segmented_dir}")
+            except Exception as e:
+                print(f"[DefectAnalyzer] Warning: Could not clean segmented directory: {e}")
+
     def analyze_session_captures(self, session_id: int, captures_dir: str, defect_types: list = None) -> Dict:
         """
         Analyze all captured images from a session for defects

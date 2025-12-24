@@ -298,10 +298,25 @@ def analyze_session_defects(session_id):
     # Get defect types from request body
     data = request.get_json() or {}
     defect_types = data.get('defect_types')
+    force = data.get('force', False)
+
+    # Check if session already has defects analyzed
+    if session.get('defects_analyzed', 0) > 0 and not force:
+        return jsonify({
+            'error': 'Session already analyzed',
+            'message': 'This session has already been analyzed for defects. Use force=true to re-run and replace existing results.',
+            'defects_analyzed': session.get('defects_analyzed'),
+            'defects_found': session.get('defects_found', 0)
+        }), 409
 
     try:
         # Get analyzer instance
         analyzer = get_defect_analyzer()
+
+        # Clean up previous analysis if re-running
+        if session.get('defects_analyzed', 0) > 0:
+            print(f"[API] Cleaning up previous analysis for session {session_id}...")
+            analyzer.cleanup_previous_analysis(session_id)
 
         # Run analysis
         print(f"[API] Starting defect analysis for session {session_id}...")
