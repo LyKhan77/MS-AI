@@ -437,9 +437,12 @@ class DefectAnalyzer:
 
         # Apply each defect mask with its color
         for defect in defects:
-            if 'mask' in defect:
-                mask = defect['mask']
-                defect_type = defect['defect_type']
+            mask = defect.get('mask')
+            if mask is not None:
+                defect_type = defect.get('defect_type', 'unknown')
+
+                # Debug: print mask application
+                print(f"[DefectAnalyzer] Applying mask for {defect_type}: shape={mask.shape}, pixels={mask.sum()}")
 
                 # Get color for this defect type
                 overlay_color = np.array(self.hex_to_bgr(self.DEFECT_COLORS.get(defect_type, '#FF0000')))
