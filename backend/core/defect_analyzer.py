@@ -336,8 +336,7 @@ class DefectAnalyzer:
             'area_pixels': area_pixels,
             'confidence': float(score),
             'crop_filename': crop_filename,
-            'timestamp': datetime.now().isoformat(),
-            'mask': mask
+            'timestamp': datetime.now().isoformat()
         }
     
     def _calculate_severity(self, area_pixels: int) -> str:
