@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
 const DEFECT_TYPES = [
-  { id: 'scratch', label: 'Scratches', prompt: 'linear scratch mark on metal surface' },
-  { id: 'dent', label: 'Dents', prompt: 'dent or deformation on metal sheet' },
-  { id: 'rust', label: 'Rust/Corrosion', prompt: 'rust spot or corrosion on metal' },
-  { id: 'hole', label: 'Holes/Perforations', prompt: 'hole or perforation in metal' },
-  { id: 'coating_bubble', label: 'Coating Bubbles', prompt: 'paint bubble or coating defect' },
-  { id: 'oil_stain', label: 'Oil Stains', prompt: 'oil or grease stain on metal' },
-  { id: 'discoloration', label: 'Discoloration', prompt: 'color irregularity or uneven tint' },
-  { id: 'pitting', label: 'Pitting', prompt: 'small pits or indentations on surface' },
-  { id: 'edge_burr', label: 'Edge Burrs', prompt: 'rough or sharp edge burr' },
-  { id: 'warping', label: 'Warping', prompt: 'warped or bent metal deformation' }
+  { id: 'scratch', label: 'Scratches', prompt: 'linear scratch mark on metal surface', color: '#FF0000' },
+  { id: 'dent', label: 'Dents', prompt: 'dent or deformation on metal sheet', color: '#0080FF' },
+  { id: 'rust', label: 'Rust/Corrosion', prompt: 'rust spot or corrosion on metal', color: '#FF8C00' },
+  { id: 'hole', label: 'Holes/Perforations', prompt: 'hole or perforation in metal', color: '#9400D3' },
+  { id: 'coating_bubble', label: 'Coating Bubbles', prompt: 'paint bubble or coating defect', color: '#00FFFF' },
+  { id: 'oil_stain', label: 'Oil Stains', prompt: 'oil or grease stain on metal', color: '#FFD700' },
+  { id: 'discoloration', label: 'Discoloration', prompt: 'color irregularity or uneven tint', color: '#FF1493' },
+  { id: 'pitting', label: 'Pitting', prompt: 'small pits or indentations on surface', color: '#00FF00' },
+  { id: 'edge_burr', label: 'Edge Burrs', prompt: 'rough or sharp edge burr', color: '#FF00FF' },
+  { id: 'warping', label: 'Warping', prompt: 'warped or bent metal deformation', color: '#00CED1' }
 ];
 
 const Defects = () => {
@@ -20,6 +20,7 @@ const Defects = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [defects, setDefects] = useState([]);
   const [defectStats, setDefectStats] = useState(null);
+  const [groupedDefects, setGroupedDefects] = useState([]);
   const [showImagesModal, setShowImagesModal] = useState(false);
   const [captures, setCaptures] = useState([]);
   const [loadingCaptures, setLoadingCaptures] = useState(false);
@@ -94,14 +95,26 @@ const Defects = () => {
     }
   };
 
+  const fetchGroupedDefects = async (sessionId) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/defects/grouped`);
+      const data = await response.json();
+      setGroupedDefects(data.grouped_defects || []);
+    } catch (err) {
+      console.error('Failed to fetch grouped defects:', err);
+    }
+  };
+
   const handleSelectSession = async (session) => {
     setSelectedSession(session);
     setDefects([]);
     setDefectStats(null);
-    
+    setGroupedDefects([]);
+
     // Load existing defects if available
     if (session.defects_found && session.defects_found > 0) {
       await fetchDefects(session.id);
+      await fetchGroupedDefects(session.id);
     }
   };
 
@@ -154,6 +167,8 @@ const Defects = () => {
           alert(`Analysis complete!\n\nFound ${data.results.defects_found} defects in ${data.results.processing_time.toFixed(1)}s\n\nReview defects below.`);
         }
 
+        // Fetch grouped defects
+        await fetchGroupedDefects(selectedSession.id);
         // Refresh defect data
         await fetchDefects(selectedSession.id);
         // Refresh sessions list to update stats
@@ -347,7 +362,7 @@ const Defects = () => {
                 </div>
               )}
 
-              {/* Defect Gallery */}
+              {/* Defect Gallery - Grouped by Capture */}
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 md:p-6">
                 <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -355,35 +370,100 @@ const Defects = () => {
                   </svg>
                   Detected Defects
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {defects.map((defect, idx) => (
-                    <div key={idx} className="bg-black/20 rounded-lg overflow-hidden border border-white/10 hover:border-primary transition-colors group">
-                      <div className="relative aspect-square">
-                        <img 
-                          src={`/api/sessions/${selectedSession.id}/defects/${defect.crop_filename}`}
-                          alt={`${defect.defect_type} defect`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23333" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" fill="%23666" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
-                          }}
-                        />
-                        <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${
-                          defect.severity === 'critical' ? 'bg-red-500' :
-                          defect.severity === 'moderate' ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`} />
-                      </div>
-                      <div className="p-2">
-                        <div className="text-xs font-semibold text-white truncate capitalize">
-                          {defect.defect_type.replace('_', ' ')}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {(defect.confidence * 100).toFixed(0)}% • {defect.area_pixels}px²
-                        </div>
-                      </div>
+                {groupedDefects.map((group, idx) => (
+                  <div key={idx} className="mb-6 last:mb-0">
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-white font-medium">
+                        Capture #{group.capture_index} - {group.image_filename}
+                      </h4>
+                      {group.has_defects ? (
+                        <span className="bg-white/10 px-3 py-1 rounded-full text-sm text-gray-300">
+                          {group.defects.length} defect(s)
+                        </span>
+                      ) : (
+                        <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">
+                          No defects
+                        </span>
+                      )}
                     </div>
-                  ))}
-                </div>
+
+                    {group.has_defects ? (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Left: Segmented Full Image */}
+                        <div className="bg-black/20 rounded-lg overflow-hidden border border-white/10">
+                          <div className="p-2 bg-white/5 text-xs text-gray-400 flex items-center justify-between">
+                            <span>Segmented Image</span>
+                            <a
+                              href={group.segmented_image_path}
+                              download={group.image_filename.replace('.', '_segmented.')}
+                              className="text-primary hover:text-secondary flex items-center gap-1"
+                              title="Download segmented image"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l4 4m-4-4V4" />
+                              </svg>
+                            </a>
+                          </div>
+                          <img
+                            src={group.segmented_image_path}
+                            alt="Segmented"
+                            className="w-full h-auto"
+                          />
+                        </div>
+
+                        {/* Right: Crops Grid */}
+                        <div className="bg-black/20 rounded-lg border border-white/10 p-3">
+                          <div className="text-xs text-gray-400 mb-3">Defect Crops</div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {group.defects.map((defect, dIdx) => (
+                              <div key={dIdx} className="bg-black/30 rounded overflow-hidden border border-white/10 hover:border-primary transition-colors">
+                                <div className="relative aspect-square">
+                                  <img
+                                    src={`/api/sessions/${selectedSession.id}/defects/${defect.crop_filename}`}
+                                    alt={defect.defect_type}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23333" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" fill="%23666" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
+                                    }}
+                                  />
+                                  {/* Color indicator dot */}
+                                  <div
+                                    className="absolute top-1 right-1 w-3 h-3 rounded-full border border-white/50"
+                                    style={{ backgroundColor: defect.color }}
+                                  />
+                                  {/* Severity indicator */}
+                                  <div className={`absolute top-1 left-1 w-3 h-3 rounded-full ${
+                                    defect.severity === 'critical' ? 'bg-red-500' :
+                                    defect.severity === 'moderate' ? 'bg-yellow-500' :
+                                    'bg-green-500'
+                                  }`} />
+                                </div>
+                                <div className="p-1.5">
+                                  <div className="text-[10px] font-semibold text-white truncate">
+                                    {defect.defect_type.replace('_', ' ')}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400">
+                                    {(defect.confidence * 100).toFixed(0)}%
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* No defects found */
+                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 text-center">
+                        <svg className="w-12 h-12 mx-auto text-green-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-green-400 font-medium">No defects found</p>
+                        <p className="text-gray-400 text-sm mt-1">Metal sheet passed quality inspection</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </>
           ) : selectedSession ? (
@@ -554,6 +634,10 @@ const Defects = () => {
                         : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
                     }`}
                   >
+                    <div
+                      className="w-4 h-4 rounded flex-shrink-0"
+                      style={{ backgroundColor: defect.color }}
+                    />
                     <div className={`w-5 h-5 rounded border flex items-center justify-center ${
                       selectedDefectTypes.includes(defect.id)
                         ? 'bg-primary border-primary'

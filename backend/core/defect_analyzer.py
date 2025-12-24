@@ -23,11 +23,32 @@ class DefectAnalyzer:
     SAM-3 based defect detection for metal sheets
     Uses zero-shot segmentation with text prompts
     """
-    
+
+    # Defect color mapping (hex to BGR for OpenCV)
+    DEFECT_COLORS = {
+        'scratch': '#FF0000',        # Red
+        'dent': '#0080FF',           # Azure Blue
+        'rust': '#FF8C00',           # Dark Orange
+        'hole': '#9400D3',           # Dark Violet
+        'coating_bubble': '#00FFFF', # Cyan
+        'oil_stain': '#FFD700',      # Gold
+        'discoloration': '#FF1493',  # Deep Pink
+        'pitting': '#00FF00',        # Lime Green
+        'edge_burr': '#FF00FF',      # Magenta
+        'warping': '#00CED1'         # Dark Turquoise
+    }
+
+    @staticmethod
+    def hex_to_bgr(hex_color):
+        """Convert hex color to BGR tuple for OpenCV"""
+        hex_color = hex_color.lstrip('#')
+        rgb = tuple(int(hex_color[i:i+2], 16) for i in (4, 2, 0))
+        return rgb
+
     def __init__(self, checkpoint_path='models/sam3_vit_h.pth', device='cuda'):
         """
         Initialize SAM-3 model for defect detection
-        
+
         Args:
             checkpoint_path: Path to SAM-3 checkpoint
             device: 'cuda' or 'cpu'
@@ -36,7 +57,7 @@ class DefectAnalyzer:
         self.checkpoint_path = checkpoint_path
         self.model = None
         self.predictor = None
-        
+
         # Defect prompts for zero-shot detection
         self.all_defect_prompts = {
             'scratch': 'linear scratch mark on metal surface',
@@ -51,17 +72,17 @@ class DefectAnalyzer:
             'warping': 'warped or bent metal deformation'
         }
         self.defect_prompts = self.all_defect_prompts.copy()
-        
+
         # Size thresholds for severity classification (pixels²)
         self.severity_thresholds = {
             'minor': 100,      # < 100 px²
             'moderate': 500,   # 100-500 px²
             'critical': 9999999  # > 500 px²
         }
-        
+
         # Confidence threshold
         self.confidence_threshold = 0.5
-        
+
         print(f"[DefectAnalyzer] Initialized on device: {self.device}")
     
     def load_model(self):
@@ -169,6 +190,9 @@ class DefectAnalyzer:
 
             results['defects'].extend(defects)
             results['defects_found'] += len(defects)
+
+            # Save segmented full image with masks overlay
+            self._save_segmented_image(image, defects, session_id, img_file)
 
         results['processing_time'] = time.time() - start_time
 
@@ -312,7 +336,8 @@ class DefectAnalyzer:
             'area_pixels': area_pixels,
             'confidence': float(score),
             'crop_filename': crop_filename,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'mask': mask
         }
     
     def _calculate_severity(self, area_pixels: int) -> str:
@@ -334,44 +359,95 @@ class DefectAnalyzer:
         defect_type: str
     ) -> str:
         """
-        Save cropped defect region with mask overlay
-        
+        Save cropped defect region with color-specific mask overlay
+
         Returns:
             crop_filename: Filename of saved crop
         """
         x, y, w, h = bbox
-        
+
         # Ensure bbox is within image bounds
         h_img, w_img = image.shape[:2]
         x = max(0, min(x, w_img - 1))
         y = max(0, min(y, h_img - 1))
         w = min(w, w_img - x)
         h = min(h, h_img - y)
-        
+
         # Crop image
         crop = image[y:y+h, x:x+w].copy()
-        
+
         # Crop mask
         mask_crop = mask[y:y+h, x:x+w]
-        
-        # Overlay mask (semi-transparent red)
+
+        # Get color for this defect type
+        overlay_color = np.array(self.hex_to_bgr(self.DEFECT_COLORS.get(defect_type, '#FF0000')))
+
+        # Overlay mask with defect-specific color (semi-transparent)
         if crop.shape[0] > 0 and crop.shape[1] > 0:
-            crop[mask_crop > 0] = crop[mask_crop > 0] * 0.6 + np.array([0, 0, 255]) * 0.4
-        
+            crop[mask_crop > 0] = crop[mask_crop > 0] * 0.6 + overlay_color * 0.4
+
         # Create defects directory
         defects_dir = f"data/sessions/{session_id}/defects"
         os.makedirs(defects_dir, exist_ok=True)
-        
+
         # Generate filename
         base_name = os.path.splitext(img_filename)[0]
-        timestamp = int(time.time() * 1000)  # milliseconds
+        timestamp = int(time.time() * 1000)
         crop_filename = f"{defect_type}_{base_name}_{timestamp}.jpg"
         crop_path = os.path.join(defects_dir, crop_filename)
-        
+
         # Save crop
         cv2.imwrite(crop_path, crop)
-        
+
         return crop_filename
+
+    def _save_segmented_image(
+        self,
+        image: np.ndarray,
+        defects: List[Dict],
+        session_id: int,
+        img_filename: str
+    ) -> str:
+        """
+        Save full capture image with all defect masks applied as colored overlays
+
+        Args:
+            image: Original image
+            defects: List of defects with mask data
+            session_id: Session ID
+            img_filename: Original image filename
+
+        Returns:
+            segmented_filename: Filename of saved segmented image
+        """
+        # Create copy of image for overlay
+        segmented = image.copy()
+
+        # Apply each defect mask with its color
+        for defect in defects:
+            if 'mask' in defect:
+                mask = defect['mask']
+                defect_type = defect['defect_type']
+
+                # Get color for this defect type
+                overlay_color = np.array(self.hex_to_bgr(self.DEFECT_COLORS.get(defect_type, '#FF0000')))
+
+                # Apply semi-transparent overlay with natural color blending
+                # Multiple overlapping defects will naturally blend colors
+                segmented[mask > 0] = segmented[mask > 0] * 0.6 + overlay_color * 0.4
+
+        # Create segmented directory
+        segmented_dir = f"data/sessions/{session_id}/segmented"
+        os.makedirs(segmented_dir, exist_ok=True)
+
+        # Use same filename as original
+        segmented_filename = img_filename
+        segmented_path = os.path.join(segmented_dir, segmented_filename)
+
+        # Save segmented image
+        cv2.imwrite(segmented_path, segmented)
+
+        return segmented_filename
 
 
 # Global instance (lazy loaded)

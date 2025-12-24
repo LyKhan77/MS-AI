@@ -353,54 +353,137 @@ def get_session_defects(session_id):
     }), 200
 
 
+@app.route('/api/sessions/<session_id>/defects/<filename>', methods=['GET'])
+def get_defect_crop(session_id, filename):
+    """
+    Serve defect crop image
+
+    GET /api/sessions/<session_id>/defects/<filename>
+    """
+    from flask import send_from_directory
+
+    defects_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'defects')
+    return send_from_directory(defects_dir, filename)
+
+
+@app.route('/api/sessions/<session_id>/defects/grouped', methods=['GET'])
+def get_session_defects_grouped(session_id):
+    """
+    Get defects grouped by capture image with segmented image paths
+
+    GET /api/sessions/<session_id>/defects/grouped
+
+    Response:
+        {
+            "grouped_defects": [
+                {
+                    "image_filename": "capture_001.jpg",
+                    "capture_index": 1,
+                    "segmented_image_path": "/api/sessions/123/segmented/capture_001.jpg",
+                    "has_defects": true,
+                    "defects": [...]
+                }
+            ]
+        }
+    """
+    from core.defect_analyzer import DefectAnalyzer
+
+    # Get session captures
+    captures = db.get_session_captures(session_id)
+
+    # Get all defects for session
+    all_defects = db.get_session_defects(session_id)
+
+    # Group defects by image_filename
+    defects_by_image = {}
+    for defect in all_defects:
+        img_filename = defect.get('image_filename')
+        if img_filename not in defects_by_image:
+            defects_by_image[img_filename] = []
+        defects_by_image[img_filename].append(defect)
+
+    # Build grouped response
+    grouped_defects = []
+    for idx, capture in enumerate(captures, 1):
+        img_filename = capture['filename']
+        image_defects = defects_by_image.get(img_filename, [])
+
+        # Add color to each defect
+        for defect in image_defects:
+            defect_type = defect.get('defect_type', 'unknown')
+            defect['color'] = DefectAnalyzer.DEFECT_COLORS.get(defect_type, '#FF0000')
+
+        grouped_defects.append({
+            'image_filename': img_filename,
+            'capture_index': idx,
+            'segmented_image_path': f'/api/sessions/{session_id}/segmented/{img_filename}',
+            'has_defects': len(image_defects) > 0,
+            'defects': image_defects
+        })
+
+    return jsonify({
+        'grouped_defects': grouped_defects
+    }), 200
+
+
+@app.route('/api/sessions/<session_id>/segmented/<filename>', methods=['GET'])
+def serve_segmented_image(session_id, filename):
+    """
+    Serve segmented full image
+
+    GET /api/sessions/<session_id>/segmented/<filename>
+    """
+    from flask import send_from_directory
+
+    segmented_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'segmented')
+    return send_from_directory(segmented_dir, filename)
+
+
 @app.route('/api/sessions/<session_id>/defects/export', methods=['GET'])
 def export_session_defects(session_id):
     """
-    Export all defect crops as ZIP file
-    
+    Export all defect crops and segmented images as ZIP file
+
     GET /api/sessions/<session_id>/defects/export
-    
+
     Returns:
-        ZIP file download
+        ZIP file download with crops/ and segmented_images/ folders
     """
     from flask import send_file
     import zipfile
     from io import BytesIO
-    
+
     defects_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'defects')
-    
-    if not os.path.exists(defects_dir):
-        return jsonify({'error': 'No defects found'}), 404
-    
+    segmented_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'segmented')
+
+    if not os.path.exists(defects_dir) and not os.path.exists(segmented_dir):
+        return jsonify({'error': 'No defects or segmented images found'}), 404
+
     # Create ZIP in memory
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        for filename in os.listdir(defects_dir):
-            file_path = os.path.join(defects_dir, filename)
-            if os.path.isfile(file_path):
-                zip_file.write(file_path, filename)
-    
+        # Add defect crops
+        if os.path.exists(defects_dir):
+            for filename in os.listdir(defects_dir):
+                file_path = os.path.join(defects_dir, filename)
+                if os.path.isfile(file_path):
+                    zip_file.write(file_path, f'crops/{filename}')
+
+        # Add segmented images
+        if os.path.exists(segmented_dir):
+            for filename in os.listdir(segmented_dir):
+                file_path = os.path.join(segmented_dir, filename)
+                if os.path.isfile(file_path):
+                    zip_file.write(file_path, f'segmented_images/{filename}')
+
     zip_buffer.seek(0)
-    
+
     return send_file(
         zip_buffer,
         mimetype='application/zip',
         as_attachment=True,
         download_name=f'session_{session_id}_defects.zip'
     )
-
-
-@app.route('/api/sessions/<session_id>/defects/<filename>', methods=['GET'])
-def get_defect_crop(session_id, filename):
-    """
-    Serve defect crop image
-    
-    GET /api/sessions/<session_id>/defects/<filename>
-    """
-    from flask import send_from_directory
-    
-    defects_dir = os.path.join(Config.SESSIONS_DIR, session_id, 'defects')
-    return send_from_directory(defects_dir, filename)
 
 
 # ============================================================
