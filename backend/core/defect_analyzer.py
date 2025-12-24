@@ -280,14 +280,26 @@ class DefectAnalyzer:
                         )
                         if defect is not None:
                             defects.append(defect)
-                        
+
             except Exception as e:
                 print(f"[DefectAnalyzer] Error detecting {defect_type}: {e}")
                 import traceback
                 traceback.print_exc()
                 continue
-        
-        return defects
+
+        # Save segmented full image with all masks applied (before removing masks from defects)
+        if defects:
+            self._save_segmented_image(image, defects, session_id, img_filename)
+
+        # Return defects WITHOUT masks (for database serialization)
+        clean_defects = []
+        for defect in defects:
+            clean_defect = defect.copy()
+            if 'mask' in clean_defect:
+                del clean_defect['mask']
+            clean_defects.append(clean_defect)
+
+        return clean_defects
 
     
     def _process_defect_mask(
@@ -336,7 +348,8 @@ class DefectAnalyzer:
             'area_pixels': area_pixels,
             'confidence': float(score),
             'crop_filename': crop_filename,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'mask': mask
         }
     
     def _calculate_severity(self, area_pixels: int) -> str:
