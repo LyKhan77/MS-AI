@@ -186,13 +186,11 @@ class DefectAnalyzer:
                 continue
 
             # Analyze image for defects
+            # Note: _analyze_image() internally calls _save_segmented_image() before removing masks
             defects = self._analyze_image(image, img_file, session_id)
 
             results['defects'].extend(defects)
             results['defects_found'] += len(defects)
-
-            # Save segmented full image with masks overlay
-            self._save_segmented_image(image, defects, session_id, img_file)
 
         results['processing_time'] = time.time() - start_time
 
