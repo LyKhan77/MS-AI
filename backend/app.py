@@ -550,4 +550,4 @@ def handle_disconnect():
 if __name__ == '__main__':
     # Ensure DB exists
     Config.init_app(app)
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5055, debug=True)
